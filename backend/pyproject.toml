@@ -5,6 +5,8 @@ description = "FastAPI backend for Wikipedia Doomscroll"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.116,<1",
+    "openai>=2,<3",
+    "python-dotenv>=1,<2",
     "uvicorn[standard]>=0.35,<1",
 ]
 
@@ -14,4 +16,3 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 package-mode = false
-
