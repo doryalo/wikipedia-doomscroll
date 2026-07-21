@@ -1,0 +1,143 @@
+version: 1
+project_name: Bootstrap the architecture, documentation, and agent infrastructure
+  for 'Wikiped
+skills_dir: .claude/commands
+constraints_primer: 'Follow AGENTS.md as canonical. Out-of-scope gaps go through propose_task
+  (triage), never direct domain-board mutation. Prefer scoped git commits.
+
+  - Use official Wikimedia APIs only (no HTML scraping).
+
+  - Preserve the Stitch AI-generated frontend shell as the visual source of truth
+  without redesigning.
+
+  - Output ONLY bootstrap infrastructure, documentation, and empty task boards (no
+  implementation tickets yet).
+
+  - Sequential execution until file ownership boundaries are proven safe.
+
+  - Must include WIKIMEDIA_CONTACT header for API compliance.'
+roles:
+- name: scrum-master
+  prefix: SM
+  board_file: scrum-master.json
+  skill: scrum-master
+  tool_profile: governance
+  wires_into_flow3: false
+  use_code_model: false
+  doc_hints:
+  - AGENTS.md
+  - docs/
+  memory_namespace: null
+- name: architect
+  prefix: AR
+  board_file: project-architect.json
+  skill: architect
+  tool_profile: dev+bash
+  wires_into_flow3: true
+  use_code_model: false
+  doc_hints:
+  - AGENTS.md
+  - docs/
+  memory_namespace: null
+- name: api-expert
+  prefix: AP
+  board_file: api-expert.json
+  skill: api-expert
+  tool_profile: dev
+  wires_into_flow3: true
+  use_code_model: false
+  doc_hints:
+  - AGENTS.md
+  - docs/
+  memory_namespace: null
+- name: code-review
+  prefix: CR
+  board_file: code-review.json
+  skill: code-review
+  tool_profile: readonly
+  wires_into_flow3: true
+  use_code_model: true
+  doc_hints:
+  - AGENTS.md
+  - docs/
+  memory_namespace: null
+- name: data-expert
+  prefix: DA
+  board_file: data-expert.json
+  skill: data-expert
+  tool_profile: dev
+  wires_into_flow3: true
+  use_code_model: false
+  doc_hints:
+  - AGENTS.md
+  - docs/
+  memory_namespace: null
+- name: update-docs
+  prefix: DC
+  board_file: update-docs.json
+  skill: update-docs
+  tool_profile: dev
+  wires_into_flow3: true
+  use_code_model: false
+  doc_hints:
+  - AGENTS.md
+  - docs/
+  memory_namespace: null
+- name: general
+  prefix: GN
+  board_file: general.json
+  skill: architect
+  tool_profile: dev
+  wires_into_flow3: true
+  use_code_model: false
+  doc_hints:
+  - AGENTS.md
+  memory_namespace: null
+- name: lean-review
+  prefix: LN
+  board_file: lean-review.json
+  skill: lean-review
+  tool_profile: readonly
+  wires_into_flow3: false
+  use_code_model: true
+  doc_hints:
+  - AGENTS.md
+  - docs/
+  memory_namespace: null
+- name: platform-expert
+  prefix: PL
+  board_file: platform-expert.json
+  skill: platform-expert
+  tool_profile: dev
+  wires_into_flow3: true
+  use_code_model: false
+  doc_hints:
+  - AGENTS.md
+  - docs/
+  memory_namespace: null
+- name: qa-tests
+  prefix: QA
+  board_file: qa-tests.json
+  skill: qa-tests
+  tool_profile: dev+bash
+  wires_into_flow3: true
+  use_code_model: false
+  doc_hints:
+  - AGENTS.md
+  - docs/
+  memory_namespace: null
+- name: ui-specialist
+  prefix: US
+  board_file: ui-specialist.json
+  skill: ui-specialist
+  tool_profile: dev
+  wires_into_flow3: true
+  use_code_model: false
+  doc_hints:
+  - AGENTS.md
+  - docs/
+  memory_namespace: null
+gates: []
+parallel_prefixes: []
+intake_prefix: SM
+architect_prefix: AR

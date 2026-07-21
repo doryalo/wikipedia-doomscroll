@@ -1,0 +1,24 @@
+{
+  "name": "code-review",
+  "board_prefix": "CR",
+  "is_specialist": false,
+  "role": "Independent reviewer; gates integration by severity.",
+  "persona_outline": "Independent reviewer; gates integration by severity.",
+  "model": "google/gemini-3.1-pro-preview",
+  "tools": [
+    "read_file",
+    "write_file",
+    "list_directory",
+    "search_files",
+    "git_commit",
+    "propose_task"
+  ],
+  "doc_paths": [
+    "AGENTS.md",
+    "docs/"
+  ],
+  "source_template": "core/code-review",
+  "wires_into_flow3": true,
+  "version": 1,
+  "parent_spec": null
+}

@@ -1,0 +1,24 @@
+{
+  "name": "update-docs",
+  "board_prefix": "DC",
+  "is_specialist": false,
+  "role": "Keeps canonical docs, ADRs, and CHANGELOG in sync.",
+  "persona_outline": "Keeps canonical docs, ADRs, and CHANGELOG in sync.",
+  "model": "google/gemini-3.1-pro-preview",
+  "tools": [
+    "read_file",
+    "write_file",
+    "list_directory",
+    "search_files",
+    "git_commit",
+    "propose_task"
+  ],
+  "doc_paths": [
+    "AGENTS.md",
+    "docs/"
+  ],
+  "source_template": "core/update-docs",
+  "wires_into_flow3": true,
+  "version": 1,
+  "parent_spec": null
+}
