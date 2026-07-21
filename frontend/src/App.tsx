@@ -4,7 +4,7 @@ import { Badge, type BadgeProps } from "./components/ui/badge"
 import { YearRangeFilter } from "./components/YearRangeFilter"
 
 type Topic = { name: string; variant: NonNullable<BadgeProps["variant"]> }
-type Post = { id: string; year: number; date: string; headline: string; content: string; likes: number; comments: number; shares?: number; source: string; sourceUrl?: string; topics: Topic[] }
+type Post = { id: string; apiId: string; year: number; date: string; headline: string; content: string; likes: number; comments: number; shares?: number; source: string; sourceUrl?: string; topics: Topic[] }
 
 // ── API types ──────────────────────────────────────────────────────────────
 type ApiItem = {
@@ -81,13 +81,49 @@ function SkeletonCard() {
   )
 }
 
+const DEMO_PROFILE_ID = "profile-ada"
+
 function PostCard({ post }: { post: Post }) {
   const [expanded, setExpanded] = useState(false)
   const [liked, setLiked] = useState(false)
   const [popKey, setPopKey] = useState(0)
+  const [commentCount, setCommentCount] = useState(post.comments)
+  const [showComments, setShowComments] = useState(false)
+  const [commentText, setCommentText] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+
   const long = post.content.length > 180
   const copy = !expanded && long ? `${post.content.slice(0, 180).trimEnd()}…` : post.content
-  const toggleLike = () => { setLiked(l => !l); if (!liked) setPopKey(k => k + 1) }
+
+  const toggleLike = async () => {
+    const nowLiked = !liked
+    setLiked(nowLiked)
+    if (nowLiked) setPopKey(k => k + 1)
+    if (nowLiked) {
+      await fetch(`/api/posts/${post.apiId}/likes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profileId: DEMO_PROFILE_ID }),
+      })
+    }
+  }
+
+  const submitComment = async () => {
+    const text = commentText.trim()
+    if (!text || submitting) return
+    setSubmitting(true)
+    const res = await fetch(`/api/posts/${post.apiId}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profileId: DEMO_PROFILE_ID, content: text }),
+    })
+    if (res.ok) {
+      setCommentText("")
+      setCommentCount(c => c + 1)
+    }
+    setSubmitting(false)
+  }
+
   return (
     <article className="history-card rounded-2xl border border-line bg-white shadow-[0_5px_24px_rgba(28,38,63,.05)]">
       <div className="p-5 sm:p-6">
@@ -111,9 +147,31 @@ function PostCard({ post }: { post: Post }) {
         <button onClick={toggleLike} className={`flex cursor-pointer items-center gap-1.5 transition-colors ${liked ? "text-red-500" : "hover:text-red-400"}`}>
           <Heart key={popKey} className={`size-4 ${liked ? "heart-pop fill-red-500" : ""}`} />{format(post.likes + (liked ? 1 : 0))}
         </button>
-        <span className="flex items-center gap-1.5"><MessageCircle className="size-4" />{format(post.comments)}</span>
+        <button onClick={() => setShowComments(c => !c)} className={`flex cursor-pointer items-center gap-1.5 transition-colors ${showComments ? "text-brand" : "hover:text-brand"}`}>
+          <MessageCircle className="size-4" />{format(commentCount)}
+        </button>
         {post.shares && <span className="flex items-center gap-1.5"><Send className="size-4" />{post.shares}</span>}
       </div>
+      {showComments && (
+        <div className="border-t border-line/60 px-5 pb-4 pt-3 sm:px-6">
+          <div className="flex gap-2">
+            <input
+              value={commentText}
+              onChange={e => setCommentText(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment() } }}
+              placeholder="Add a comment…"
+              className="flex-1 rounded-lg border border-line bg-page px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-brand focus:ring-1 focus:ring-brand"
+            />
+            <button
+              onClick={submitComment}
+              disabled={!commentText.trim() || submitting}
+              className="flex-shrink-0 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white transition-opacity disabled:opacity-40 hover:bg-brand/90"
+            >
+              {submitting ? "…" : "Post"}
+            </button>
+          </div>
+        </div>
+      )}
     </article>
   )
 }
@@ -161,6 +219,7 @@ export default function App() {
         const item = pool[index % pool.length]
         return {
           id: `${item.id}-${index}`,
+          apiId: item.id,
           year: item.historicalDate.startYear,
           date: item.historicalDate.label,
           headline: item.sourceTitle ?? item.profileName,
