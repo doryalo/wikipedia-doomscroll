@@ -1,15 +1,32 @@
 # %% [markdown]
 # # Wikimedia retrieval examples
 #
-# A single-file, notebook-style tutorial. Open it in VS Code, PyCharm, Spyder,
-# or Jupyter with Jupytext support and run one `# %%` cell at a time. It can
-# also run as a normal Python script.
+# A single-file, notebook-style tutorial and dataset generator. Open it in VS
+# Code, PyCharm, Spyder, or Jupyter with Jupytext support and run one `# %%`
+# cell at a time. It can also run as a normal Python script.
 #
 # Install once:
 #
 #     python3 -m pip install httpx
 #
-# Then replace `WIKIMEDIA_CONTACT`, set `RUN_LIVE_EXAMPLES = True`, and run.
+# Set `WIKIMEDIA_CONTACT` to a monitored email or HTTPS contact URL before a
+# live request. It is included in the required identifying User-Agent.
+#
+# Run interactive examples:
+#
+#     python3 wikimedia_retrieval_tutorial.py
+#
+# Regenerate every JSON snapshot in `wikimedia_content/`:
+#
+#     python3 wikimedia_retrieval_tutorial.py --generate-json
+#
+# Regenerate only named examples (comma-separated):
+#
+#     python3 wikimedia_retrieval_tutorial.py \
+#       --generate-json-only=random-pages,most-viewed-day,related-genghis-khan
+#
+# Generation overwrites the selected JSON snapshots. Results are live API
+# snapshots, so random, featured, date-based, and popularity results can vary.
 # Only official Wikimedia APIs are used; no Wikipedia HTML pages are scraped.
 # API facts were checked against the project reference on 2026-07-21.
 
