@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ArrowLeft, Heart, History, MessageCircle, Search, Send } from "lucide-react"
+import { ArrowLeft, Heart, MessageCircle, Search, Send } from "lucide-react"
 import { Badge, type BadgeProps } from "./components/ui/badge"
 import { YearRangeFilter } from "./components/YearRangeFilter"
 import { AuthModal, type CurrentUser } from "./components/AuthModal"
 
 type Topic = { name: string; variant: NonNullable<BadgeProps["variant"]> }
-type Post = { id: string; apiId: string; profileName: string; year: number; date: string; headline: string; content: string; likes: number; comments: number; shares?: number; source: string; sourceUrl?: string; topics: Topic[] }
+type Post = { id: string; apiId: string; profileName: string; profilePhotoUrl?: string; year: number; date: string; headline: string; content: string; likes: number; comments: number; shares?: number; source: string; sourceUrl?: string; topics: Topic[] }
 
 // ── API types ──────────────────────────────────────────────────────────────
 type ApiItem = {
@@ -78,7 +78,13 @@ function yearBoundsOf(items: ApiItem[]): [number, number] {
 }
 
 const format = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K` : String(n)
-function AdminMark() { return <div aria-hidden="true" className="admin-mark"><History className="size-5" /></div> }
+
+const AVATAR_COLORS = ["bg-blue-400", "bg-emerald-400", "bg-violet-400", "bg-amber-400", "bg-rose-400"]
+function Avatar({ name, photoUrl }: { name: string; photoUrl?: string }) {
+  if (photoUrl) return <img src={photoUrl} alt={name} className="size-10 rounded-xl object-cover object-top flex-shrink-0" />
+  let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffff
+  return <div className={`flex size-10 flex-shrink-0 items-center justify-center rounded-xl ${AVATAR_COLORS[h % AVATAR_COLORS.length]} font-brand text-sm font-black text-white`}>{name[0]}</div>
+}
 
 function SkeletonCard() {
   return (
@@ -159,7 +165,7 @@ function PostCard({ post, currentUser, onAuthRequired }: { post: Post; currentUs
       <div className="p-5 sm:p-6">
         <header className="mb-4 flex items-start justify-between">
           <div className="flex min-w-0 items-center gap-3">
-            <AdminMark />
+            <Avatar name={post.profileName} photoUrl={post.profilePhotoUrl} />
             <div><h2 className="font-brand text-sm font-bold text-ink">{post.profileName}</h2><p className="text-xs text-muted">{post.date}</p></div>
           </div>
         </header>
@@ -280,6 +286,7 @@ export default function App() {
         id: item.id,
         apiId: item.id,
         profileName: item.profileName,
+        profilePhotoUrl: item.profilePhotoUrl || undefined,
         year: item.historicalDate.startYear,
         date: item.historicalDate.label,
         headline: item.sourceTitle ?? item.profileName,
