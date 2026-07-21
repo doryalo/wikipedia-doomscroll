@@ -32,6 +32,8 @@ function yearBoundsOf(facts: Fact[]): [number, number] {
   return [lo, lo === hi ? lo + 1 : hi]
 }
 
+const TOPICS: Topic[] = Array.from(new Map(ALL_FACTS.flatMap(f => f.topics).map(t => [t.name, t])).values())
+
 const format = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K` : String(n)
 function AdminMark() { return <div aria-hidden="true" className="admin-mark"><History className="size-5" /></div> }
 
@@ -114,19 +116,31 @@ export default function App() {
     }, first ? 600 : 800)
   }, [])
 
-  function handleSubmit() {
-    const q = query.trim()
-    if (!q) return
-    const matches = ALL_FACTS.filter(f => matchesQuery(f, q))
+  function commitResults(matches: Fact[], label: string) {
     matchesRef.current = matches
     const bounds = yearBoundsOf(matches)
     page.current = 0
     locked.current = false
+    setQuery(label)
     setSubmitted(true)
     setPosts([])
     setYearBounds(bounds)
     setYearRange(bounds)
     load(true)
+  }
+
+  function handleSubmit() {
+    const q = query.trim()
+    if (!q) return
+    commitResults(ALL_FACTS.filter(f => matchesQuery(f, q)), q)
+  }
+
+  function exploreTopic(topicName: string) {
+    commitResults(ALL_FACTS.filter(f => f.topics.some(t => t.name === topicName)), topicName)
+  }
+
+  function exploreAll() {
+    commitResults(ALL_FACTS, "")
   }
 
   // Infinite scroll
@@ -217,6 +231,35 @@ export default function App() {
                 GO!
               </button>
             </form>
+
+            {/* Explore chips */}
+            <div className="flex flex-col items-center gap-3 pt-1">
+              <p className="text-sm font-medium text-muted">Or explore a topic</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Badge
+                  role="button"
+                  tabIndex={0}
+                  onClick={exploreAll}
+                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); exploreAll() } }}
+                  className="cursor-pointer border-line bg-white text-ink transition-transform hover:scale-105 hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1"
+                >
+                  All
+                </Badge>
+                {TOPICS.map(t => (
+                  <Badge
+                    key={t.name}
+                    variant={t.variant}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => exploreTopic(t.name)}
+                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); exploreTopic(t.name) } }}
+                    className="cursor-pointer transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1"
+                  >
+                    {t.name}
+                  </Badge>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
