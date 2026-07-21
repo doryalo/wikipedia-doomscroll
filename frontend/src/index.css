@@ -12,13 +12,14 @@
 }
 
 * { box-sizing: border-box; }
+html { scroll-snap-type: y proximity; }
 body { margin: 0; min-width: 320px; background: var(--color-page); color: var(--color-ink); font-family: var(--font-body); }
 button, input { font: inherit; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 @keyframes heart-pop { 0% { transform: scale(1); } 40% { transform: scale(1.4); } 70% { transform: scale(0.9); } 100% { transform: scale(1); } }
 .heart-pop { animation: heart-pop 350ms ease-out; }
 .shimmer { background: linear-gradient(90deg, #e8e9ee 0%, #f8f9fe 50%, #e8e9ee 100%); background-size: 200% 100%; animation: shimmer 1.5s linear infinite; }
-.history-card { transition: transform .18s ease, box-shadow .18s ease; }
+.history-card { transition: transform .18s ease, box-shadow .18s ease; scroll-snap-align: start; scroll-margin-top: 4rem; min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; }
 @media (hover: hover) { .history-card:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(28, 38, 63, .09); } }
 .year-range-input { -webkit-appearance: none; appearance: none; background: transparent; pointer-events: none; height: 100%; }
 .year-range-input::-webkit-slider-runnable-track { background: transparent; }
