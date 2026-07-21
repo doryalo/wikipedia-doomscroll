@@ -5,6 +5,15 @@ poetry install
 poetry run uvicorn app.main:app --reload
 ```
 
+Production (four API processes; set the count to match available CPU/memory):
+
+```bash
+WEB_CONCURRENCY=4 poetry run uvicorn app.main:app
+```
+
+Uvicorn runs one async event loop per process. Exactly one process owns the
+enrichment and post-generation loops, which run together with `asyncio.gather`.
+
 Health checks: `GET /live` and `GET /ready`.
 
 ## Wikipedia enrichment
