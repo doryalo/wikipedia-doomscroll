@@ -20,6 +20,12 @@ button, input { font: inherit; }
 .shimmer { background: linear-gradient(90deg, #e8e9ee 0%, #f8f9fe 50%, #e8e9ee 100%); background-size: 200% 100%; animation: shimmer 1.5s linear infinite; }
 .history-card { transition: transform .18s ease, box-shadow .18s ease; }
 @media (hover: hover) { .history-card:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(28, 38, 63, .09); } }
+.year-range-input { -webkit-appearance: none; appearance: none; background: transparent; pointer-events: none; height: 100%; }
+.year-range-input::-webkit-slider-runnable-track { background: transparent; }
+.year-range-input::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; pointer-events: auto; width: 24px; height: 24px; border-radius: 9999px; background: transparent; border: none; box-shadow: none; cursor: grab; }
+.year-range-input::-webkit-slider-thumb:active { cursor: grabbing; }
+.year-range-input::-moz-range-track { background: transparent; }
+.year-range-input::-moz-range-thumb { pointer-events: auto; width: 24px; height: 24px; border-radius: 9999px; background: transparent; border: none; box-shadow: none; cursor: grab; }
 .admin-mark { display: flex; width: 2.5rem; height: 2.5rem; align-items: center; justify-content: center; border-radius: .7rem; background: #e9eff5; color: var(--color-brand); }
 .reaction-like, .reaction-heart { display: flex; width: 1.25rem; height: 1.25rem; align-items: center; justify-content: center; border: 2px solid white; border-radius: 9999px; }
 .reaction-like { background: #3979c5; }
