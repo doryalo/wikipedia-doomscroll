@@ -1,6 +1,23 @@
 {
   "version": "1.0",
   "team": "update-docs",
-  "updated_at": "2026-07-21T15:43:39Z",
-  "tasks": []
+  "updated_at": "2026-07-21T18:00:00Z",
+  "tasks": [
+    {
+      "id": "DC-001",
+      "title": "Document optimistic engagement-state contract once backend mutations exist",
+      "status": "proposed",
+      "priority": "medium",
+      "description": "frontend/docs/architecture.md notes the like button is client-side only and diverges from the backend API contract's authoritative engagement state target. Once /api/v1 like/reaction mutations exist, update frontend/docs/api-integration.md and backend/docs/api-contract.md to document the mutation shape, idempotency key requirement, and the client reconciliation flow (optimistic -> confirmed/rollback).",
+      "context": "Divergence noted in: frontend/docs/architecture.md, backend/docs/api-contract.md."
+    },
+    {
+      "id": "DC-002",
+      "title": "Document engagement metrics strategy in an Explanation page",
+      "status": "proposed",
+      "priority": "low",
+      "description": "Session discussion proposed collecting viewport dwell time, visibility fraction, See-more expand clicks, and source-link clicks as recommendation-engine input signals, plus quality guards (tab focus, idle detection, content-length normalisation). Capture this rationale and metric taxonomy in docs/explanation/ before backend implementation begins.",
+      "context": "Decision discussed in session; no code exists yet."
+    }
+  ]
 }
