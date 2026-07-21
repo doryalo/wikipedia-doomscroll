@@ -153,6 +153,7 @@ function PostCard({ post, currentUser, onAuthRequired }: { post: Post; currentUs
   }
 
   return (
+    <div className="post-slide">
     <article className="history-card rounded-2xl border border-line bg-white shadow-[0_5px_24px_rgba(28,38,63,.05)]">
       <div className="p-5 sm:p-6">
         <header className="mb-4 flex items-start justify-between">
@@ -213,6 +214,7 @@ function PostCard({ post, currentUser, onAuthRequired }: { post: Post; currentUs
         </div>
       )}
     </article>
+    </div>
   )
 }
 
