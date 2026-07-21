@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Learnscroll | Curating the human experience</title>
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600&family=Lexend:wght@700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary:            "#4B6EF5",
+            surface:            "#FFFFFF",
+            background:         "#F0F0F4",
+            "on-surface":       "#1A1A2E",
+            "on-surface-variant":"#6B7280",
+            "outline-variant":  "#E5E7EB",
+            "tag-bg":           "#ECEEF6",
+            "tag-text":         "#4B5563",
+            "avatar-bg":        "#E8EEFF",
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    body {
+      margin: 0;
+      background: #F2F1EE;
+      font-family: 'Work Sans', sans-serif;
+      color: #1A1A2E;
+      -webkit-font-smoothing: antialiased;
+    }
+    .font-display { font-family: 'Lexend', sans-serif; }
+
+    /* ── Card ── */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    /* ── Search focus ring ── */
+    .search-card { transition: box-shadow 0.2s; }
+    .search-card.focused { box-shadow: 0 0 0 2px #4B6EF5; }
+
+  </style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header style="
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  background: #fff;
+  border-bottom: 1px solid #E5E7EB;
+  box-shadow: none;
+  transition: box-shadow 0.2s;
+" id="top-nav">
+  <nav style="
+    max-width: 672px; margin: 0 auto;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  ">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="
+        width:36px;height:36px;border-radius:10px;
+        background:#4A63D3;
+        display:flex;align-items:center;justify-content:center;
+        flex-shrink:0;
+      ">
+        <span class="material-symbols-outlined" style="color:#fff;font-size:20px;font-variation-settings:'FILL' 1;">restore</span>
+      </div>
+      <span class="font-display" style="font-size:20px;font-weight:800;color:#1A1A2E;letter-spacing:-0.02em;">LearnScroll</span>
+    </div>
+    <!-- Pill search bar — matches feed header -->
+    <div style="
+      display:flex;align-items:center;gap:8px;
+      background:#EEEEF2;border-radius:999px;
+      padding:7px 14px;flex:1;max-width:240px;margin:0 16px;
+    ">
+      <span class="material-symbols-outlined" style="color:#9CA3AF;font-size:18px;">search</span>
+      <span style="font-size:14px;color:#9CA3AF;font-family:'Work Sans',sans-serif;">Search history</span>
+    </div>
+    <button style="
+      padding:8px;border-radius:50%;border:none;background:none;
+      cursor:pointer;transition:background 0.15s;
+    " onmouseenter="this.style.background='#EEEEF2'" onmouseleave="this.style.background='none'">
+      <span class="material-symbols-outlined" style="color:#6B7280;font-size:22px;">account_circle</span>
+    </button>
+  </nav>
+</header>
+
+<!-- ══ HERO ══ -->
+<section style="
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(57px + 72px) 24px 64px;
+">
+  <div style="width:100%;max-width:600px;display:flex;flex-direction:column;gap:20px;">
+
+    <!-- Label + headline -->
+    <div style="text-align:center;display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <p style="
+          font-size:11px;font-weight:700;letter-spacing:0.1em;
+          text-transform:uppercase;color:#1A3462;margin:0 0 4px;
+        ">Daily Dispatches From The Past</p>
+        <p style="font-size:14px;color:#6B7280;margin:0;">A timeline worth scrolling through.</p>
+      </div>
+      <h1 class="font-display" style="
+        font-size:clamp(36px,6vw,52px);
+        font-weight:800;
+        color:#1A1A2E;
+        line-height:1.1;
+        letter-spacing:-0.03em;
+        margin:0;
+      ">Curating the<br/>human experience.</h1>
+    </div>
+
+    <!-- Search bar — no left icon, Enter key on right -->
+    <div class="card search-card" id="search-wrap" style="
+      display:flex;align-items:center;gap:12px;
+      padding:14px 16px;
+    ">
+      <input
+        id="search-input"
+        type="text"
+        placeholder="What do you want to learn about today?"
+        style="
+          flex:1;border:none;outline:none;background:transparent;
+          font-family:'Work Sans',sans-serif;
+          font-size:16px;color:#1A1A2E;
+        "
+        onkeydown="if(event.key==='Enter') goToFeed()"
+      />
+      <button onclick="goToFeed()" id="go-btn" style="
+        background: #4A63D3;
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 22px;
+        font-family: 'Lexend', sans-serif;
+        font-weight: 800;
+        font-size: 17px;
+        cursor: pointer;
+        flex-shrink: 0;
+        letter-spacing: -0.01em;
+        transition: background 0.15s, transform 0.1s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      "
+      onmouseenter="this.style.background='#3A52C0'"
+      onmouseleave="this.style.background='#4A63D3'"
+      onmousedown="this.style.transform='scale(0.96)'"
+      onmouseup="this.style.transform='scale(1)'">
+        GO!
+        <span class="material-symbols-outlined" style="font-size:18px;color:#fff;">arrow_forward</span>
+      </button>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ FEED ══ -->
+<section id="feed" style="padding: 0 24px 64px; max-width:672px;margin:0 auto;width:100%;opacity:1;transform:none;">
+
+  <div style="margin-bottom:24px;padding-top:8px;">
+    <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#1A3462;margin:0 0 4px;">Daily Dispatches From The Past</p>
+    <p style="font-size:14px;color:#6B7280;margin:0;">A timeline worth scrolling through.</p>
+  </div>
+
+  <!-- Card 1 -->
+  <div class="card" style="padding:20px;margin-bottom:16px;display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;border-radius:8px;background:#4A63D3;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span class="material-symbols-outlined" style="color:#fff;font-size:18px;font-variation-settings:'FILL' 1;">restore</span>
+      </div>
+      <div>
+        <p style="margin:0;font-size:14px;font-weight:600;">Anon Admin</p>
+        <p style="margin:0;font-size:12px;color:#6B7280;">56 years ago</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:99px;background:#ECEEF6;color:#4B5563;">Science</span>
+      <span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:99px;background:#ECEEF6;color:#4B5563;">USA</span>
+    </div>
+    <h2 class="font-display" style="margin:0;font-size:20px;font-weight:700;line-height:1.3;color:#1A1A2E;">650 Million People Stopped Everything To Watch This Moment</h2>
+    <p style="margin:0;font-size:15px;color:#6B7280;line-height:1.6;">At 10:56 p.m. EDT, Neil Armstrong became the first person to ever walk on the Moon — and almost the entire connected world tuned in to watch. It remains one of the largest live tel…</p>
+    <a href="#" style="color:#4B6EF5;font-size:14px;font-weight:500;text-decoration:none;">See more</a>
+    <p style="margin:0;font-size:12px;color:#9CA3AF;">Source: <a href="#" style="color:#4B6EF5;text-decoration:none;">Apollo 11 mission archive</a></p>
+    <div style="display:flex;gap:24px;padding-top:12px;border-top:1px solid #E5E7EB;">
+      <button style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:#6B7280;font-family:'Work Sans',sans-serif;font-size:14px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">favorite_border</span>12K
+      </button>
+      <button style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:#6B7280;font-family:'Work Sans',sans-serif;font-size:14px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">chat_bubble_outline</span>892
+      </button>
+      <button style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:#6B7280;font-family:'Work Sans',sans-serif;font-size:14px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">send</span>318
+      </button>
+    </div>
+  </div>
+
+  <!-- Card 2 -->
+  <div class="card" style="padding:20px;margin-bottom:16px;display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;border-radius:8px;background:#4A63D3;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span class="material-symbols-outlined" style="color:#fff;font-size:18px;font-variation-settings:'FILL' 1;">restore</span>
+      </div>
+      <div>
+        <p style="margin:0;font-size:14px;font-weight:600;">Anon Admin</p>
+        <p style="margin:0;font-size:12px;color:#6B7280;">234 years ago</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:99px;background:#ECEEF6;color:#4B5563;">USA</span>
+    </div>
+    <h2 class="font-display" style="margin:0;font-size:20px;font-weight:700;line-height:1.3;color:#1A1A2E;">The 45 Words That Changed What You're Allowed To Say</h2>
+    <p style="margin:0;font-size:15px;color:#6B7280;line-height:1.6;">The First Amendment entered the U.S. Constitution, guaranteeing freedom of religion, speech, press, assembly, and petition — in just 45 words. More than two centuries later, those…</p>
+    <a href="#" style="color:#4B6EF5;font-size:14px;font-weight:500;text-decoration:none;">See more</a>
+    <p style="margin:0;font-size:12px;color:#9CA3AF;">Source: <a href="#" style="color:#4B6EF5;text-decoration:none;">U.S. National Archives</a></p>
+    <div style="display:flex;gap:24px;padding-top:12px;border-top:1px solid #E5E7EB;">
+      <button style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:#6B7280;font-family:'Work Sans',sans-serif;font-size:14px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">favorite_border</span>7.3K
+      </button>
+      <button style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:#6B7280;font-family:'Work Sans',sans-serif;font-size:14px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">chat_bubble_outline</span>426
+      </button>
+      <button style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:#6B7280;font-family:'Work Sans',sans-serif;font-size:14px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">send</span>187
+      </button>
+    </div>
+  </div>
+
+  <!-- Card 3 -->
+  <div class="card" style="padding:20px;display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;border-radius:8px;background:#4A63D3;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span class="material-symbols-outlined" style="color:#fff;font-size:18px;font-variation-settings:'FILL' 1;">restore</span>
+      </div>
+      <div>
+        <p style="margin:0;font-size:14px;font-weight:600;">Anon Admin</p>
+        <p style="margin:0;font-size:12px;color:#6B7280;">2 days ago</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:99px;background:#ECEEF6;color:#4B5563;">Science</span>
+    </div>
+    <h2 class="font-display" style="margin:0;font-size:20px;font-weight:700;line-height:1.3;color:#1A1A2E;">This Man Orbited The Entire Planet Before Most Of The World Knew His Name</h2>
+    <p style="margin:0;font-size:15px;color:#6B7280;line-height:1.6;">Vostok 1 completed a single orbit of Earth in 108 minutes, making Yuri Gagarin the first human in space. His call sign, Kedr — Russian for cedar — was broadcast to mission control…</p>
+    <a href="#" style="color:#4B6EF5;font-size:14px;font-weight:500;text-decoration:none;">See more</a>
+    <p style="margin:0;font-size:12px;color:#9CA3AF;">Source: <a href="#" style="color:#4B6EF5;text-decoration:none;">Roscosmos historical collection</a></p>
+    <div style="display:flex;gap:24px;padding-top:12px;border-top:1px solid #E5E7EB;">
+      <button style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:#6B7280;font-family:'Work Sans',sans-serif;font-size:14px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">favorite_border</span>9.1K
+      </button>
+      <button style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:#6B7280;font-family:'Work Sans',sans-serif;font-size:14px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">chat_bubble_outline</span>541
+      </button>
+      <button style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:#6B7280;font-family:'Work Sans',sans-serif;font-size:14px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">send</span>203
+      </button>
+    </div>
+  </div>
+
+</section>
+
+<!-- ══ FOOTER ══ -->
+<footer style="background:#fff;border-top:1px solid #E5E7EB;">
+  <div style="max-width:672px;margin:0 auto;padding:40px 24px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:24px;">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <div style="width:28px;height:28px;border-radius:7px;background:#4A63D3;display:flex;align-items:center;justify-content:center;">
+          <span class="material-symbols-outlined" style="color:#fff;font-size:16px;font-variation-settings:'FILL' 1;">restore</span>
+        </div>
+        <span class="font-display" style="font-size:18px;font-weight:800;color:#1A1A2E;letter-spacing:-0.02em;">LearnScroll</span>
+      </div>
+      <p style="margin:0;font-size:12px;color:#9CA3AF;">© 2024 Learnscroll Educational Archive. All rights reserved.</p>
+    </div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <a href="#" style="font-size:13px;color:#6B7280;text-decoration:none;">Provenance</a>
+      <a href="#" style="font-size:13px;color:#6B7280;text-decoration:none;">Methodology</a>
+      <a href="#" style="font-size:13px;color:#6B7280;text-decoration:none;">Privacy</a>
+      <a href="#" style="font-size:13px;color:#6B7280;text-decoration:none;">Terms</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Header shadow on scroll
+  const nav = document.getElementById('top-nav');
+  window.addEventListener('scroll', () => {
+    nav.style.boxShadow = window.scrollY > 0 ? '0 1px 4px rgba(0,0,0,0.08)' : 'none';
+  }, { passive: true });
+
+  // Search focus ring
+  const input = document.getElementById('search-input');
+  const wrap  = document.getElementById('search-wrap');
+  input.addEventListener('focus', () => wrap.classList.add('focused'));
+  input.addEventListener('blur',  () => wrap.classList.remove('focused'));
+
+  // Go to feed
+  function goToFeed() {
+    document.getElementById('feed').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+</script>
+</body>
+</html>
