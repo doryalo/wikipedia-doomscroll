@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS fictional_characters (
     description TEXT,
     birth_date TEXT,
     death_date TEXT,
-    profile_photo_url TEXT
+    profile_photo_url TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS groups (
@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS posts (
     source_url TEXT,
     source_title TEXT,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    CHECK (content_type NOT IN ('image', 'video', 'reel') OR media_url IS NOT NULL),
     FOREIGN KEY (fictional_character_id) REFERENCES fictional_characters(id)
         ON DELETE RESTRICT
 );
@@ -91,6 +92,8 @@ CREATE TABLE IF NOT EXISTS profile_group_follows (
 
 CREATE INDEX IF NOT EXISTS idx_posts_character_event_date
     ON posts(fictional_character_id, historical_start_year);
+CREATE INDEX IF NOT EXISTS idx_posts_created_at_id
+    ON posts(created_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_post_groups_group_post
     ON post_groups(group_id, post_id);
 CREATE INDEX IF NOT EXISTS idx_comments_post_created_at
