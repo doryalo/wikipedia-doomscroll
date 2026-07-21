@@ -38,8 +38,9 @@ def run_directory(
         )
         for path in files:
             try:
-                result = pipeline.process(path, force=force)
-                stats[result] += 1
+                file_stats = pipeline.process_file(path, force=force)
+                for status, count in file_stats.items():
+                    stats[status] += count
             except Exception:
                 stats["failed"] += 1
                 logger.error("file.failed path=%s", path)
