@@ -40,6 +40,42 @@ def seed_demo_data() -> None:
         ("character-tubman", "Civil War service", "Tubman served as a nurse, scout, and spy for the Union Army.", 1863, "year", "1863", ("civil-war", "history"), ("group-social-change",)),
         ("character-curie", "First Nobel Prize", "Marie Curie shared the 1903 Nobel Prize in Physics.", 1903, "year", "1903", ("nobel", "physics"), ("group-science",)),
     )
+    generated_topics = (
+        ("character-cleopatra", "Alexandria", "A Mediterranean center for scholarship, trade, and diplomacy.", -50, "ancient", "egypt", ("group-ancient-world",)),
+        ("character-leonardo", "Renaissance workshop", "Artists and engineers learned by observing, sketching, and making.", 1490, "renaissance", "art", ("group-renaissance", "group-science")),
+        ("character-tubman", "Community networks", "Local organizers made information, travel, and mutual aid possible.", 1855, "social-change", "abolition", ("group-social-change",)),
+        ("character-curie", "Laboratory notes", "Repeated experiments turned faint observations into reliable evidence.", 1900, "science", "research", ("group-science",)),
+    )
+    precision_cycle = ("year", "month", "day", "range", "circa")
+    generated_specs = []
+    for generated_index in range(88):
+        character_id, theme, description, base_year, topic_tag, secondary_tag, post_groups = generated_topics[generated_index % len(generated_topics)]
+        precision = precision_cycle[generated_index % len(precision_cycle)]
+        year = base_year + (generated_index // len(generated_topics))
+        sequence = generated_index + 1
+        if precision == "month":
+            date_label = f"March {year}"
+        elif precision == "day":
+            date_label = f"14 March {year}"
+        elif precision == "range":
+            date_label = f"{year}\u2013{year + 2}"
+        elif precision == "circa":
+            date_label = f"c. {year}"
+        else:
+            date_label = str(year)
+        generated_specs.append(
+            (
+                character_id,
+                f"{theme}: discovery {sequence}",
+                f"{description} This fixture entry supports browsing and pagination tests.",
+                year,
+                precision,
+                date_label,
+                (topic_tag, secondary_tag, "fixture"),
+                post_groups,
+            )
+        )
+    post_specs += tuple(generated_specs)
 
     with closing(connect()) as connection:
         connection.executemany("INSERT OR IGNORE INTO profiles (id, username, password_hash) VALUES (?, ?, ?)", profiles)
@@ -49,10 +85,15 @@ def seed_demo_data() -> None:
             post_id = f"post-{index:03d}"
             content_type = ("text", "image", "video", "reel")[(index - 1) % 4]
             media_url = None if content_type == "text" else f"https://images.example.test/wikipedia-doomscroll/{post_id}.{ 'jpg' if content_type == 'image' else 'mp4' }"
+            created_at = (
+                f"2026-07-21T12:{index:02d}:00.000Z"
+                if index <= 12
+                else f"2026-07-{20 - ((index - 13) // 24):02d}T{(index - 13) % 24:02d}:00:00.000Z"
+            )
             connection.execute(
                 """INSERT OR IGNORE INTO posts (id, fictional_character_id, title, content, media_url, content_type, thumbnail_url, historical_start_year, historical_precision, historical_date_label, label, tags, source_url, source_title, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (post_id, character_id, title, content, media_url, content_type, f"https://images.example.test/wikipedia-doomscroll/{post_id}-thumb.jpg" if content_type in ("video", "reel") else None, year, precision, date_label, "History", json.dumps(tags), f"https://en.wikipedia.org/wiki/{character_id.removeprefix('character-').replace('-', '_')}", title, f"2026-07-21T12:{index:02d}:00.000Z"),
+                (post_id, character_id, title, content, media_url, content_type, f"https://images.example.test/wikipedia-doomscroll/{post_id}-thumb.jpg" if content_type in ("video", "reel") else None, year, precision, date_label, "History", json.dumps(tags), f"https://en.wikipedia.org/wiki/{character_id.removeprefix('character-').replace('-', '_')}", title, created_at),
             )
             connection.executemany("INSERT OR IGNORE INTO post_groups (post_id, group_id) VALUES (?, ?)", ((post_id, group_id) for group_id in post_groups))
         connection.executemany("INSERT OR IGNORE INTO likes (profile_id, post_id) VALUES (?, ?)", (("profile-ada", "post-001"), ("profile-sam", "post-001"), ("profile-morgan", "post-002")))
