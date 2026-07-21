@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ArrowLeft, Heart, MessageCircle, Search, Send } from "lucide-react"
+import { ArrowLeft, Heart, MessageCircle, Send } from "lucide-react"
 import { Badge, type BadgeProps } from "./components/ui/badge"
 import { YearRangeFilter } from "./components/YearRangeFilter"
 import { AuthModal, type CurrentUser } from "./components/AuthModal"
@@ -60,14 +60,6 @@ async function fetchAllPosts(): Promise<ApiItem[]> {
     cursor = data.nextCursor
   } while (cursor)
   return items
-}
-
-function matchesQuery(item: ApiItem, q: string): boolean {
-  const lq = q.toLowerCase()
-  return (item.sourceTitle ?? "").toLowerCase().includes(lq)
-    || item.contentText.toLowerCase().includes(lq)
-    || item.tags.some(t => t.toLowerCase().includes(lq))
-    || item.profileName.toLowerCase().includes(lq)
 }
 
 function yearBoundsOf(items: ApiItem[]): [number, number] {
@@ -225,14 +217,14 @@ function PostCard({ post, currentUser, onAuthRequired }: { post: Post; currentUs
 }
 
 export default function App() {
-  const [query, setQuery] = useState("")
   const [submitted, setSubmitted] = useState(false)
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(false)
   const [moreLoading, setMoreLoading] = useState(false)
+  const [dataYearBounds, setDataYearBounds] = useState<[number, number]>([1780, 2026])
+  const [heroYearRange, setHeroYearRange] = useState<[number, number]>([1780, 2026])
   const [yearBounds, setYearBounds] = useState<[number, number]>([1780, 2026])
   const [yearRange, setYearRange] = useState<[number, number]>([1780, 2026])
-  const [topics, setTopics] = useState<Topic[]>([])
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
   const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null)
   const [streak, setStreak] = useState(0)
@@ -258,14 +250,9 @@ export default function App() {
   useEffect(() => {
     fetchAllPosts().then(items => {
       allApiItems.current = items
-      const seen = new Set<string>()
-      const unique: Topic[] = []
-      for (const item of items) {
-        for (const tag of item.tags) {
-          if (!seen.has(tag)) { seen.add(tag); unique.push(tagToTopic(tag)) }
-        }
-      }
-      setTopics(unique)
+      const bounds = yearBoundsOf(items)
+      setDataYearBounds(bounds)
+      setHeroYearRange(bounds)
       // Pick "On This Day" post deterministically by day-of-year
       if (items.length) {
         const doy = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 864e5)
@@ -296,7 +283,7 @@ export default function App() {
         shares: item.sharesCount || undefined,
         source: item.sourceTitle ?? item.profileName,
         sourceUrl: item.sourceUrl,
-        topics: item.tags.map(tagToTopic),
+        topics: item.tags.slice(0, 2).map(tagToTopic),
       } satisfies Post))
       page.current += 1
       setPosts(first ? batch : old => [...old, ...batch])
@@ -304,12 +291,14 @@ export default function App() {
     }, first ? 600 : 800)
   }, [])
 
-  function commitResults(matches: ApiItem[], label: string) {
+  function exploreYears([lo, hi]: [number, number]) {
+    const matches = allApiItems.current
+      .filter(item => { const y = item.historicalDate.startYear; return y >= lo && y <= hi })
+      .sort((a, b) => a.historicalDate.startYear - b.historicalDate.startYear)
     matchesRef.current = matches
     const bounds = yearBoundsOf(matches)
     page.current = 0
     locked.current = false
-    setQuery(label)
     setSubmitted(true)
     setPosts([])
     setYearBounds(bounds)
@@ -317,30 +306,12 @@ export default function App() {
     load(true)
   }
 
-  function handleSubmit() {
-    const q = query.trim()
-    if (!q) return
-    commitResults(allApiItems.current.filter(item => matchesQuery(item, q)), q)
-  }
-
-  function exploreTopic(tagName: string) {
-    const normalized = tagName.toLowerCase().replace(/\s+/g, "-")
-    commitResults(
-      allApiItems.current.filter(item => item.tags.some(t => t.toLowerCase() === normalized)),
-      tagName,
-    )
-  }
-
-  function exploreAll() {
-    commitResults(allApiItems.current, "")
-  }
-
   function handleBack() {
     setSubmitted(false)
     setPosts([])
-    setQuery("")
     page.current = 0
     locked.current = false
+    setHeroYearRange(dataYearBounds)
   }
 
   // Infinite scroll
@@ -391,27 +362,6 @@ export default function App() {
             <span className="font-brand text-xl font-black tracking-tight text-ink">LearnScroll</span>
           </div>
 
-          {/* Header search — appears on submit */}
-          <form
-            onSubmit={e => { e.preventDefault(); handleSubmit() }}
-            className="flex flex-1 items-center gap-2 overflow-hidden transition-all duration-400"
-            style={{
-              maxWidth: submitted ? 360 : 0,
-              opacity: submitted ? 1 : 0,
-              pointerEvents: submitted ? "auto" : "none",
-            }}
-          >
-            <label className="flex flex-1 items-center gap-2 rounded-full bg-page px-3 py-2">
-              <Search className="size-4 flex-shrink-0 text-muted" />
-              <input
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Search history…"
-                className="w-full border-0 bg-transparent text-sm outline-none"
-              />
-            </label>
-          </form>
-
           {/* Auth / user controls */}
           <div className="flex flex-shrink-0 items-center gap-2">
             {currentUser && streak > 0 && (
@@ -454,15 +404,19 @@ export default function App() {
 
         {/* ── Hero ── */}
         <section
-          className="flex flex-col items-center overflow-hidden transition-all duration-500"
+          className="transition-[grid-template-rows,opacity] duration-500"
           style={{
-            maxHeight: submitted ? 0 : 600,
+            display: "grid",
+            gridTemplateRows: submitted ? "0fr" : "1fr",
             opacity: submitted ? 0 : 1,
-            paddingTop: submitted ? 0 : "5rem",
-            paddingBottom: submitted ? 0 : "3rem",
           }}
         >
-          <div className="w-full max-w-[560px] flex flex-col gap-5 text-center">
+          <div className="overflow-hidden">
+          <div
+            className="flex flex-col items-center"
+            style={{ paddingTop: "5rem", paddingBottom: "3rem" }}
+          >
+          <div className="w-full max-w-[560px] flex flex-col gap-6 text-center">
             <div className="flex flex-col gap-2">
               <p className="font-brand text-[11px] font-bold uppercase tracking-[0.12em] text-brand">Daily dispatches from the past</p>
               <p className="text-sm text-muted">A timeline worth scrolling through.</p>
@@ -474,7 +428,7 @@ export default function App() {
             {/* On This Day card */}
             {onThisDay && (
               <button
-                onClick={() => exploreTopic(onThisDay.tags[0] ?? "")}
+                onClick={() => exploreYears([onThisDay.historicalDate.startYear, onThisDay.historicalDate.startYear])}
                 className="w-full rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left transition-all hover:border-amber-300 hover:shadow-md"
               >
                 <div className="mb-2 flex items-center gap-2">
@@ -488,56 +442,22 @@ export default function App() {
               </button>
             )}
 
-            {/* Hero search bar */}
-            <form
-              onSubmit={e => { e.preventDefault(); handleSubmit() }}
-              className="flex items-center gap-3 rounded-2xl border border-line bg-white p-3 shadow-[0_5px_24px_rgba(28,38,63,.07)] transition-shadow focus-within:ring-2 focus-within:ring-brand"
-            >
-              <input
-                autoFocus
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="What do you want to learn about today?"
-                className="flex-1 border-0 bg-transparent text-base text-ink outline-none placeholder:text-muted"
-              />
-              <button
-                type="submit"
-                className="flex-shrink-0 rounded-xl bg-brand px-5 py-2.5 font-brand text-[15px] font-extrabold text-white transition-transform active:scale-95 hover:bg-brand/90"
-              >
-                GO!
-              </button>
-            </form>
+            {/* Year range slider */}
+            <YearRangeFilter
+              min={dataYearBounds[0]}
+              max={dataYearBounds[1]}
+              value={heroYearRange}
+              onChange={setHeroYearRange}
+            />
 
-            {/* Explore chips */}
-            {topics.length > 0 && (
-              <div className="flex flex-col items-center gap-3 pt-1">
-                <p className="text-sm font-medium text-muted">Or explore a topic</p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  <Badge
-                    role="button"
-                    tabIndex={0}
-                    onClick={exploreAll}
-                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); exploreAll() } }}
-                    className="cursor-pointer border-line bg-white text-ink transition-transform hover:scale-105 hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1"
-                  >
-                    All
-                  </Badge>
-                  {topics.map(t => (
-                    <Badge
-                      key={t.name}
-                      variant={t.variant}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => exploreTopic(t.name)}
-                      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); exploreTopic(t.name) } }}
-                      className="cursor-pointer transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1"
-                    >
-                      {t.name}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
+            <button
+              onClick={() => exploreYears(heroYearRange)}
+              className="w-full rounded-xl bg-brand py-3 font-brand text-[15px] font-extrabold text-white transition-transform active:scale-95 hover:bg-brand/90"
+            >
+              Explore
+            </button>
+          </div>
+          </div>
           </div>
         </section>
 
@@ -545,7 +465,7 @@ export default function App() {
         {submitted && (
           <div className="flex flex-col gap-4 pb-24 pt-4">
             {noResults ? (
-              <p className="py-16 text-center text-sm text-muted">No results for &ldquo;{query}&rdquo; — try another topic.</p>
+              <p className="py-16 text-center text-sm text-muted">No posts found in that year range — try widening it.</p>
             ) : (
               <>
                 <YearRangeFilter min={yearBounds[0]} max={yearBounds[1]} value={yearRange} onChange={setYearRange} />
