@@ -1,0 +1,24 @@
+{
+  "name": "ui-specialist",
+  "board_prefix": "US",
+  "is_specialist": true,
+  "role": "Owns UI screens and the design system.",
+  "persona_outline": "Owns UI screens and the design system.",
+  "model": "google/gemini-3.1-pro-preview",
+  "tools": [
+    "read_file",
+    "write_file",
+    "list_directory",
+    "search_files",
+    "git_commit",
+    "propose_task"
+  ],
+  "doc_paths": [
+    "AGENTS.md",
+    "docs/"
+  ],
+  "source_template": "core/implementer",
+  "wires_into_flow3": true,
+  "version": 1,
+  "parent_spec": null
+}

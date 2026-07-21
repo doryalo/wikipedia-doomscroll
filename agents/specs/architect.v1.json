@@ -1,0 +1,24 @@
+{
+  "name": "architect",
+  "board_prefix": "AR",
+  "is_specialist": false,
+  "role": "Owns folder structure, tiered docs, ADRs, and ticket validation.",
+  "persona_outline": "Owns folder structure, tiered docs, ADRs, and ticket validation.",
+  "model": "google/gemini-3.1-pro-preview",
+  "tools": [
+    "read_file",
+    "write_file",
+    "list_directory",
+    "search_files",
+    "git_commit",
+    "propose_task"
+  ],
+  "doc_paths": [
+    "AGENTS.md",
+    "docs/"
+  ],
+  "source_template": "core/architect",
+  "wires_into_flow3": true,
+  "version": 1,
+  "parent_spec": null
+}
