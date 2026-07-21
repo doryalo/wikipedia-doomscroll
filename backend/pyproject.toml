@@ -1,0 +1,17 @@
+[project]
+name = "wikipedia-doomscroll-backend"
+version = "0.1.0"
+description = "FastAPI backend for Wikipedia Doomscroll"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.116,<1",
+    "uvicorn[standard]>=0.35,<1",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
+
