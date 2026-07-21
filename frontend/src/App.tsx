@@ -229,12 +229,24 @@ export default function App() {
   const [topics, setTopics] = useState<Topic[]>([])
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
   const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null)
+  const [streak, setStreak] = useState(0)
+  const [onThisDay, setOnThisDay] = useState<ApiItem | null>(null)
 
   const sentinel = useRef<HTMLDivElement>(null)
   const page = useRef(0)
   const locked = useRef(false)
   const matchesRef = useRef<ApiItem[]>([])
   const allApiItems = useRef<ApiItem[]>([])
+
+  // Streak — update on mount
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    const yesterday = new Date(Date.now() - 864e5).toISOString().slice(0, 10)
+    const stored = JSON.parse(localStorage.getItem("ls_streak") ?? '{"date":"","count":0}') as { date: string; count: number }
+    const count = stored.date === today ? stored.count : stored.date === yesterday ? stored.count + 1 : 1
+    if (stored.date !== today) localStorage.setItem("ls_streak", JSON.stringify({ date: today, count }))
+    setStreak(count)
+  }, [])
 
   // Fetch all posts from backend on mount
   useEffect(() => {
@@ -248,6 +260,11 @@ export default function App() {
         }
       }
       setTopics(unique)
+      // Pick "On This Day" post deterministically by day-of-year
+      if (items.length) {
+        const doy = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 864e5)
+        setOnThisDay(items[doy % items.length])
+      }
     })
   }, [])
 
@@ -390,6 +407,11 @@ export default function App() {
 
           {/* Auth / user controls */}
           <div className="flex flex-shrink-0 items-center gap-2">
+            {streak > 0 && (
+              <span className="flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-500">
+                🔥 {streak}
+              </span>
+            )}
             {currentUser ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-muted">@{currentUser.username}</span>
@@ -441,6 +463,23 @@ export default function App() {
             <h1 className="font-brand text-[clamp(32px,6vw,52px)] font-black leading-[1.1] tracking-tight text-ink">
               Curating the<br />human experience.
             </h1>
+
+            {/* On This Day card */}
+            {onThisDay && (
+              <button
+                onClick={() => exploreTopic(onThisDay.tags[0] ?? "")}
+                className="w-full rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left transition-all hover:border-amber-300 hover:shadow-md"
+              >
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-white">On This Day</span>
+                  <span className="text-xs font-semibold text-amber-700">{onThisDay.historicalDate.label}</span>
+                </div>
+                <p className="font-brand text-sm font-extrabold leading-snug text-ink line-clamp-2">
+                  {onThisDay.sourceTitle ?? onThisDay.profileName}
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-amber-800 line-clamp-2">{onThisDay.contentText}</p>
+              </button>
+            )}
 
             {/* Hero search bar */}
             <form
