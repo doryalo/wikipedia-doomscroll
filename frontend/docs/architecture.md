@@ -7,7 +7,9 @@ index.html -> src/main.tsx -> src/App.tsx -> components/ui/button.tsx
                             -> src/index.css
 ```
 
-The app is one responsive feed screen. `App.tsx` combines header/navigation, cards, skeletons, expansion state, hard-coded content, a timer-based loader, and an `IntersectionObserver`. It has no backend transport, routing, session integration, complete empty/error/end state, or tests.
+The app is one responsive feed screen. `App.tsx` combines header/navigation, cards, skeletons, expand/collapse state, per-card optimistic like state (toggle + animation), fixture content, a timer-based loader, and an `IntersectionObserver`. It has no backend transport, routing, session integration, persistence, complete empty/error/end state, or tests.
+
+The like button is **client-side only**: toggled liked state and optimistic count increment are lost on navigation. This diverges from `prompt/design.md`'s "display-only" declaration and from the backend API contract's "authoritative engagement state" target; the gap will be closed when the feed endpoint and session layer are wired up.
 
 The shell shows search, profile, navigation, and social controls, but `prompt/design.md` describes them as display-only. They remain affordances until explicit product and API contracts support them.
 
