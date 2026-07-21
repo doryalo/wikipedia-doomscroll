@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "post",
+  "title": "Post",
+  "description": "LearnScroll feed post. historicalDate represents when an event happened, not upload time.",
+  "type": "object",
+  "required": [
+    "id",
+    "profileId",
+    "profileName",
+    "profilePhotoUrl",
+    "contentType",
+    "historicalDate",
+    "createdAt",
+    "likesCount",
+    "commentsCount",
+    "tags"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Primary key"
+    },
+    "profileId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "FK to Profile"
+    },
+    "profilePhotoUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Denormalized profile photo for feed render"
+    },
+    "profileName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Denormalized profile name for feed render"
+    },
+    "contentType": {
+      "type": "string",
+      "enum": ["text", "image", "video", "reel"],
+      "description": "Drives renderer selection"
+    },
+    "contentText": {
+      "type": "string",
+      "description": "Caption or article excerpt"
+    },
+    "contentImageUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Required when contentType = image"
+    },
+    "contentVideoUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Required when contentType = video or reel"
+    },
+    "thumbnailUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Poster frame for video before play"
+    },
+    "historicalDate": {
+      "type": "object",
+      "description": "When the historical event occurred. Years use astronomical numbering: 1 BCE is 0, 2 BCE is -1.",
+      "additionalProperties": false,
+      "required": ["startYear", "precision", "label"],
+      "properties": {
+        "startYear": {
+          "type": "integer",
+          "description": "First year of the event or period. Supports BCE years."
+        },
+        "endYear": {
+          "type": "integer",
+          "description": "Last year of a historical range, when applicable."
+        },
+        "precision": {
+          "type": "string",
+          "enum": ["year", "month", "day", "range", "circa"]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Reader-facing date, e.g. '15 March 44 BCE' or 'c. 1200–1150 BCE'."
+        }
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Upload time. Used for feed ordering."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Topic tags e.g. ['astronomy', 'cold war']"
+    },
+    "sourceUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Citation link (Wikipedia, archive.org, etc.)"
+    },
+    "sourceTitle": {
+      "type": "string",
+      "description": "Human-readable citation title"
+    },
+    "likesCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "commentsCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sharesCount": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "if": {
+    "properties": { "contentType": { "enum": ["video", "reel"] } }
+  },
+  "then": {
+    "required": ["contentVideoUrl"]
+  },
+  "else": {
+    "if": {
+      "properties": { "contentType": { "const": "image" } }
+    },
+    "then": {
+      "required": ["contentImageUrl"]
+    }
+  }
+}
