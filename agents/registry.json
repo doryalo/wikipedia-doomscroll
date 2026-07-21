@@ -1,0 +1,221 @@
+{
+  "version": "1.0",
+  "agents": [
+    {
+      "name": "architect",
+      "board_prefix": "AR",
+      "is_specialist": false,
+      "role": "Owns folder structure, tiered docs, ADRs, and ticket validation.",
+      "persona_outline": "Owns folder structure, tiered docs, ADRs, and ticket validation.",
+      "model": "google/gemini-3.1-pro-preview",
+      "tools": [
+        "read_file",
+        "write_file",
+        "list_directory",
+        "search_files",
+        "git_commit",
+        "propose_task"
+      ],
+      "doc_paths": [
+        "AGENTS.md",
+        "docs/"
+      ],
+      "source_template": "core/architect",
+      "wires_into_flow3": true,
+      "version": 1,
+      "parent_spec": null
+    },
+    {
+      "name": "data-expert",
+      "board_prefix": "DA",
+      "is_specialist": true,
+      "role": "Owns data stores, schemas, and migrations.",
+      "persona_outline": "Owns data stores, schemas, and migrations.",
+      "model": "google/gemini-3.1-pro-preview",
+      "tools": [
+        "read_file",
+        "write_file",
+        "list_directory",
+        "search_files",
+        "git_commit",
+        "propose_task"
+      ],
+      "doc_paths": [
+        "AGENTS.md",
+        "docs/"
+      ],
+      "source_template": "core/implementer",
+      "wires_into_flow3": true,
+      "version": 1,
+      "parent_spec": null
+    },
+    {
+      "name": "code-review",
+      "board_prefix": "CR",
+      "is_specialist": false,
+      "role": "Independent reviewer; gates integration by severity.",
+      "persona_outline": "Independent reviewer; gates integration by severity.",
+      "model": "google/gemini-3.1-pro-preview",
+      "tools": [
+        "read_file",
+        "write_file",
+        "list_directory",
+        "search_files",
+        "git_commit",
+        "propose_task"
+      ],
+      "doc_paths": [
+        "AGENTS.md",
+        "docs/"
+      ],
+      "source_template": "core/code-review",
+      "wires_into_flow3": true,
+      "version": 1,
+      "parent_spec": null
+    },
+    {
+      "name": "lean-review",
+      "board_prefix": "LN",
+      "is_specialist": false,
+      "role": "Leanness gate \u2014 flags dead/redundant/over-engineered code; inline reviewer, no board pick.",
+      "persona_outline": "Leanness gate \u2014 flags dead/redundant/over-engineered code; inline reviewer, no board pick.",
+      "model": "google/gemini-3.1-pro-preview",
+      "tools": [
+        "read_file",
+        "write_file",
+        "list_directory",
+        "search_files",
+        "git_commit",
+        "propose_task"
+      ],
+      "doc_paths": [
+        "AGENTS.md",
+        "docs/"
+      ],
+      "source_template": "core/lean-review",
+      "wires_into_flow3": false,
+      "version": 1,
+      "parent_spec": null
+    },
+    {
+      "name": "qa-tests",
+      "board_prefix": "QA",
+      "is_specialist": false,
+      "role": "Writes/runs tests, audits against acceptance criteria.",
+      "persona_outline": "Writes/runs tests, audits against acceptance criteria.",
+      "model": "google/gemini-3.1-pro-preview",
+      "tools": [
+        "read_file",
+        "write_file",
+        "list_directory",
+        "search_files",
+        "git_commit",
+        "propose_task"
+      ],
+      "doc_paths": [
+        "AGENTS.md",
+        "docs/"
+      ],
+      "source_template": "core/qa-tests",
+      "wires_into_flow3": true,
+      "version": 1,
+      "parent_spec": null
+    },
+    {
+      "name": "update-docs",
+      "board_prefix": "DC",
+      "is_specialist": false,
+      "role": "Keeps canonical docs, ADRs, and CHANGELOG in sync.",
+      "persona_outline": "Keeps canonical docs, ADRs, and CHANGELOG in sync.",
+      "model": "google/gemini-3.1-pro-preview",
+      "tools": [
+        "read_file",
+        "write_file",
+        "list_directory",
+        "search_files",
+        "git_commit",
+        "propose_task"
+      ],
+      "doc_paths": [
+        "AGENTS.md",
+        "docs/"
+      ],
+      "source_template": "core/update-docs",
+      "wires_into_flow3": true,
+      "version": 1,
+      "parent_spec": null
+    },
+    {
+      "name": "ui-specialist",
+      "board_prefix": "US",
+      "is_specialist": true,
+      "role": "Owns UI screens and the design system.",
+      "persona_outline": "Owns UI screens and the design system.",
+      "model": "google/gemini-3.1-pro-preview",
+      "tools": [
+        "read_file",
+        "write_file",
+        "list_directory",
+        "search_files",
+        "git_commit",
+        "propose_task"
+      ],
+      "doc_paths": [
+        "AGENTS.md",
+        "docs/"
+      ],
+      "source_template": "core/implementer",
+      "wires_into_flow3": true,
+      "version": 1,
+      "parent_spec": null
+    },
+    {
+      "name": "api-expert",
+      "board_prefix": "AP",
+      "is_specialist": true,
+      "role": "Owns API design and endpoints.",
+      "persona_outline": "Owns API design and endpoints.",
+      "model": "google/gemini-3.1-pro-preview",
+      "tools": [
+        "read_file",
+        "write_file",
+        "list_directory",
+        "search_files",
+        "git_commit",
+        "propose_task"
+      ],
+      "doc_paths": [
+        "AGENTS.md",
+        "docs/"
+      ],
+      "source_template": "core/implementer",
+      "wires_into_flow3": true,
+      "version": 1,
+      "parent_spec": null
+    },
+    {
+      "name": "platform-expert",
+      "board_prefix": "PL",
+      "is_specialist": true,
+      "role": "Owns target-platform constraints, packaging, and platform APIs.",
+      "persona_outline": "Owns target-platform constraints, packaging, and platform APIs.",
+      "model": "google/gemini-3.1-pro-preview",
+      "tools": [
+        "read_file",
+        "write_file",
+        "list_directory",
+        "search_files",
+        "git_commit",
+        "propose_task"
+      ],
+      "doc_paths": [
+        "AGENTS.md",
+        "docs/"
+      ],
+      "source_template": "specialists/platform-expert",
+      "wires_into_flow3": true,
+      "version": 1,
+      "parent_spec": null
+    }
+  ]
+}
