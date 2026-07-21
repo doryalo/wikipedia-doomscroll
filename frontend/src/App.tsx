@@ -5,7 +5,7 @@ import { YearRangeFilter } from "./components/YearRangeFilter"
 import { AuthModal, type CurrentUser } from "./components/AuthModal"
 
 type Topic = { name: string; variant: NonNullable<BadgeProps["variant"]> }
-type Post = { id: string; apiId: string; profileName: string; profilePhotoUrl?: string; year: number; date: string; headline: string; content: string; likes: number; comments: number; shares?: number; source: string; sourceUrl?: string; topics: Topic[] }
+type Post = { id: string; apiId: string; profileName: string; profilePhotoUrl?: string; imageUrl?: string; year: number; date: string; headline: string; content: string; likes: number; comments: number; shares?: number; source: string; sourceUrl?: string; topics: Topic[] }
 
 // ── API types ──────────────────────────────────────────────────────────────
 type ApiItem = {
@@ -14,6 +14,8 @@ type ApiItem = {
   profilePhotoUrl: string
   contentType: string
   contentText: string
+  contentImageUrl?: string
+  thumbnailUrl?: string
   historicalDate: { startYear: number; precision: string; label: string; endYear?: number }
   tags: string[]
   likesCount: number
@@ -163,6 +165,14 @@ function PostCard({ post, currentUser, onAuthRequired }: { post: Post; currentUs
         </header>
         <div className="mb-3 flex flex-wrap gap-2">{post.topics.map(t => <Badge key={t.name} variant={t.variant}>{t.name}</Badge>)}</div>
         <h3 className="font-brand text-[21px] font-extrabold leading-[1.22] tracking-tight text-ink sm:text-[24px]">{post.headline}</h3>
+        {post.imageUrl && (
+          <img
+            src={post.imageUrl}
+            alt={post.headline}
+            loading="lazy"
+            className="mt-3 aspect-[4/3] w-full rounded-xl object-cover"
+          />
+        )}
         <p className="mt-3 text-[16px] leading-6 text-slate-700">
           {copy}
           {long && <button onClick={() => setExpanded(!expanded)} className="ml-1 cursor-pointer font-semibold text-brand underline underline-offset-2 hover:text-brand/80">{expanded ? "See less" : "See more"}</button>}
@@ -281,6 +291,7 @@ export default function App() {
         likes: Math.floor(Math.random() * 9800) + 200,
         comments: Math.floor(Math.random() * 200) + 5,
         shares: item.sharesCount || undefined,
+        imageUrl: item.contentImageUrl ?? item.thumbnailUrl,
         source: item.sourceTitle ?? item.profileName,
         sourceUrl: item.sourceUrl,
         topics: item.tags.slice(0, 2).map(tagToTopic),
