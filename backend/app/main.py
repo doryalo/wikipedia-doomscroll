@@ -14,6 +14,7 @@ from .enrichment_routes import router as enrichment_router
 from .enrichment_watcher import configured_input_dir, watch_enrichment_directory
 from .logger import configure_logging
 from .post_generation import watch_enrichments_for_posts
+from .post_images import watch_post_images
 from .router import router
 
 load_dotenv()
@@ -43,6 +44,7 @@ async def lifespan(_: FastAPI):
         asyncio.gather(
             watch_enrichment_directory(configured_input_dir()),
             watch_enrichments_for_posts(),
+            watch_post_images(),
         )
         if worker_lock
         else None

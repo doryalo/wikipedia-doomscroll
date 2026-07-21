@@ -8,8 +8,11 @@ Run with an environment that provides ``fastapi`` and ``httpx``:
 from __future__ import annotations
 
 import asyncio
+import base64
+import json
 from collections import deque
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 import os
 from pathlib import Path
@@ -21,8 +24,9 @@ from uuid import uuid4
 
 import httpx
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from fastapi.responses import FileResponse, JSONResponse
+from openai import APIConnectionError, APIStatusError, AsyncOpenAI, BadRequestError, RateLimitError
+from pydantic import BaseModel, Field, field_validator
 
 from wikimedia_content.models import PageResultsDataset
 
@@ -35,10 +39,123 @@ ANALYTICS = "https://wikimedia.org/api/rest_v1/metrics/pageviews/top"
 FEED = f"https://{LANGUAGE}.wikipedia.org/api/rest_v1/feed"
 MAX_PAGES = 10
 RAW_ARTICLE_DIR = Path(__file__).resolve().parents[1] / "backend" / "data" / "raw-articles"
+RAW_IMAGE_DIR = Path(__file__).resolve().parents[1] / "backend" / "data" / "raw-images"
+POST_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
 
 class StoredResponse(BaseModel):
     status: Literal["stored"] = "stored"
+
+
+class MediaGenerationRequest(BaseModel):
+    post_id: str = Field(alias="postId", min_length=1, max_length=128)
+    description: str = Field(min_length=1, max_length=4_000)
+    logical_value: str = Field(alias="logicalValue", min_length=1, max_length=2_000)
+    time_frame: str = Field(alias="timeFrame", min_length=1, max_length=500)
+    concept: str = Field(min_length=1, max_length=2_000)
+    intent: str = Field(min_length=1, max_length=2_000)
+
+    @field_validator("post_id")
+    @classmethod
+    def require_safe_post_id(cls, value: str) -> str:
+        if not POST_ID_PATTERN.fullmatch(value):
+            raise ValueError("postId must be filesystem-safe")
+        return value
+
+
+@dataclass(frozen=True)
+class MediaRecord:
+    artifact_path: Path
+    sidecar_path: Path
+
+
+class ImageGenerationResponse(BaseModel):
+    media_id: str = Field(alias="mediaId")
+    post_id: str = Field(alias="postId")
+    kind: Literal["image"]
+    status: Literal["completed"]
+    model: str
+    artifact_url: str = Field(alias="artifactUrl")
+
+
+class ReelGenerationResponse(BaseModel):
+    media_id: str = Field(alias="mediaId")
+    post_id: str = Field(alias="postId")
+    kind: Literal["reel"]
+    status: Literal["queued", "in_progress", "completed", "failed"]
+    model: str
+    provider_job_id: str = Field(alias="providerJobId")
+    progress: int | None = None
+    status_url: str = Field(alias="statusUrl")
+    artifact_url: str = Field(alias="artifactUrl")
+
+
+def compose_media_prompt(request: MediaGenerationRequest, *, medium: str) -> str:
+    return "\n".join(
+        (
+            f"Create a {medium}.",
+            f"Description: {request.description}",
+            f"Logical value: {request.logical_value}",
+            f"Time frame: {request.time_frame}",
+            f"Concept: {request.concept}",
+            f"Intent: {request.intent}",
+        )
+    )
+
+
+def _atomic_write_bytes(destination: Path, content: bytes) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        mode="wb",
+        dir=destination.parent,
+        prefix=f".{destination.stem}-",
+        suffix=".tmp",
+        delete=False,
+    ) as handle:
+        temporary_path = Path(handle.name)
+        try:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+            os.replace(temporary_path, destination)
+        except Exception:
+            temporary_path.unlink(missing_ok=True)
+            raise
+
+
+def write_media_record(
+    *,
+    directory: Path,
+    post_id: str,
+    media_id: str,
+    kind: Literal["image", "reel"],
+    extension: Literal["png", "mp4"],
+    content: bytes | None,
+    metadata: dict[str, Any],
+) -> MediaRecord:
+    """Atomically persist an ID-addressable artifact and its durable sidecar."""
+
+    if not POST_ID_PATTERN.fullmatch(post_id):
+        raise ValueError("post_id must be filesystem-safe")
+    if not re.fullmatch(r"[a-f0-9]{32}", media_id):
+        raise ValueError("media_id must be a UUID hex value")
+    artifact_path = directory / f"{media_id}.{extension}"
+    sidecar_path = directory / "debug" / f"{media_id}.json"
+    payload = {
+        **metadata,
+        "media_id": media_id,
+        "post_id": post_id,
+        "kind": kind,
+        "artifact_filename": artifact_path.name,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    if content is not None:
+        _atomic_write_bytes(artifact_path, content)
+    _atomic_write_bytes(
+        sidecar_path,
+        json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2).encode(),
+    )
+    return MediaRecord(artifact_path=artifact_path, sidecar_path=sidecar_path)
 
 
 class UpstreamError(Exception):
@@ -152,13 +269,270 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         timeout=httpx.Timeout(20.0, connect=5.0),
         follow_redirects=True,
     )
+    if not hasattr(app.state, "media_dir"):
+        app.state.media_dir = RAW_IMAGE_DIR
+    openai_key = os.getenv("OPENAI_API_KEY")
+    app.state.openai = AsyncOpenAI(api_key=openai_key) if openai_key else None
     try:
         yield
     finally:
         await app.state.client.aclose()
+        if app.state.openai is not None:
+            await app.state.openai.close()
 
 
 app = FastAPI(title="Live Wikimedia examples", version="0.1.0", lifespan=lifespan)
+
+
+def _media_metadata(
+    request: MediaGenerationRequest,
+    *,
+    kind: Literal["image", "reel"],
+    model: str,
+    status: str,
+    provider_job_id: str | None = None,
+) -> dict[str, Any]:
+    return {
+        "kind": kind,
+        "model": model,
+        "status": status,
+        "provider_job_id": provider_job_id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "prompt_inputs": request.model_dump(by_alias=True),
+    }
+
+
+def _openai_client(request: Request) -> AsyncOpenAI:
+    client = getattr(request.app.state, "openai", None)
+    if client is None:
+        raise HTTPException(status_code=503, detail="OpenAI media generation is not configured")
+    return client
+
+
+def _media_sidecar_by_provider_job(directory: Path, job_id: str) -> tuple[Path, dict[str, Any]] | None:
+    for sidecar_path in (directory / "debug").glob("*.json"):
+        try:
+            payload = json.loads(sidecar_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if payload.get("provider_job_id") == job_id:
+            return sidecar_path, payload
+    return None
+
+
+def _load_media_sidecar(directory: Path, media_id: str) -> tuple[Path, dict[str, Any]]:
+    if not re.fullmatch(r"[a-f0-9]{32}", media_id):
+        raise HTTPException(status_code=404, detail="Generated media was not found")
+    sidecar_path = directory / "debug" / f"{media_id}.json"
+    try:
+        payload = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise HTTPException(status_code=404, detail="Generated media was not found") from exc
+    if payload.get("media_id") != media_id:
+        raise HTTPException(status_code=404, detail="Generated media was not found")
+    return sidecar_path, payload
+
+
+@app.post(
+    "/v1/media/images/generations",
+    response_model=ImageGenerationResponse,
+    status_code=201,
+    tags=["media"],
+)
+async def generate_image(
+    request: Request, body: MediaGenerationRequest
+) -> ImageGenerationResponse:
+    client = _openai_client(request)
+    try:
+        response = await client.images.generate(
+            model="gpt-image-2",
+            prompt=compose_media_prompt(body, medium="still image"),
+        )
+        encoded_image = response.data[0].b64_json
+        if not encoded_image:
+            raise HTTPException(status_code=502, detail="OpenAI returned no image content")
+        image_bytes = base64.b64decode(encoded_image, validate=True)
+    except HTTPException:
+        raise
+    except BadRequestError as exc:
+        if getattr(exc, "code", None) == "moderation_blocked":
+            raise HTTPException(status_code=422, detail="Image generation was blocked by safety checks") from exc
+        raise HTTPException(status_code=502, detail="OpenAI rejected the image request") from exc
+    except RateLimitError as exc:
+        raise HTTPException(status_code=503, detail="OpenAI image generation is rate limited") from exc
+    except APIConnectionError as exc:
+        raise HTTPException(status_code=503, detail="OpenAI image generation is unavailable") from exc
+    except APIStatusError as exc:
+        raise HTTPException(status_code=502, detail="OpenAI image generation failed") from exc
+    except (IndexError, TypeError, ValueError) as exc:
+        raise HTTPException(status_code=502, detail="OpenAI returned invalid image content") from exc
+
+    media_id = uuid4().hex
+    try:
+        write_media_record(
+            directory=request.app.state.media_dir,
+            post_id=body.post_id,
+            media_id=media_id,
+            kind="image",
+            extension="png",
+            content=image_bytes,
+            metadata=_media_metadata(
+                body, kind="image", model="gpt-image-2", status="completed"
+            ),
+        )
+    except OSError as exc:
+        raise HTTPException(status_code=500, detail="Could not store the generated image") from exc
+    return ImageGenerationResponse(
+        mediaId=media_id,
+        postId=body.post_id,
+        kind="image",
+        status="completed",
+        model="gpt-image-2",
+        artifactUrl=f"/v1/media/{media_id}",
+    )
+
+
+def _reel_response(payload: dict[str, Any]) -> ReelGenerationResponse:
+    post_id = payload["post_id"]
+    media_id = payload["media_id"]
+    provider_job_id = payload["provider_job_id"]
+    return ReelGenerationResponse(
+        mediaId=media_id,
+        postId=post_id,
+        kind="reel",
+        status=payload["status"],
+        model=payload["model"],
+        providerJobId=provider_job_id,
+        progress=payload.get("progress"),
+        statusUrl=f"/v1/media/reels/generations/{provider_job_id}",
+        artifactUrl=f"/v1/media/{media_id}",
+    )
+
+
+@app.post(
+    "/v1/media/reels/generations",
+    response_model=ReelGenerationResponse,
+    status_code=202,
+    tags=["media"],
+)
+async def generate_reel(
+    request: Request, body: MediaGenerationRequest
+) -> ReelGenerationResponse:
+    client = _openai_client(request)
+    try:
+        # Sora 2 and the Videos API are scheduled to shut down on 2026-09-24.
+        video = await client.videos.create(
+            model="sora-2",
+            prompt=compose_media_prompt(body, medium="short vertical reel"),
+            size="720x1280",
+            seconds="8",
+        )
+    except RateLimitError as exc:
+        raise HTTPException(status_code=503, detail="OpenAI reel generation is rate limited") from exc
+    except APIConnectionError as exc:
+        raise HTTPException(status_code=503, detail="OpenAI reel generation is unavailable") from exc
+    except APIStatusError as exc:
+        raise HTTPException(status_code=502, detail="OpenAI reel generation failed") from exc
+
+    media_id = uuid4().hex
+    status = getattr(video, "status", "queued")
+    if status not in {"queued", "in_progress", "completed", "failed"}:
+        status = "queued"
+    payload = _media_metadata(
+        body,
+        kind="reel",
+        model=getattr(video, "model", "sora-2"),
+        status=status,
+        provider_job_id=video.id,
+    )
+    payload["progress"] = getattr(video, "progress", None)
+    try:
+        write_media_record(
+            directory=request.app.state.media_dir,
+            post_id=body.post_id,
+            media_id=media_id,
+            kind="reel",
+            extension="mp4",
+            content=None,
+            metadata=payload,
+        )
+    except OSError as exc:
+        raise HTTPException(status_code=500, detail="Could not store the reel request") from exc
+    return _reel_response({**payload, "media_id": media_id, "post_id": body.post_id})
+
+
+@app.get(
+    "/v1/media/reels/generations/{job_id}",
+    response_model=ReelGenerationResponse,
+    tags=["media"],
+)
+async def reel_status(request: Request, job_id: str) -> ReelGenerationResponse:
+    found = _media_sidecar_by_provider_job(request.app.state.media_dir, job_id)
+    if found is None:
+        raise HTTPException(status_code=404, detail="Generated reel was not found")
+    _, stored = found
+    client = _openai_client(request)
+    try:
+        video = await client.videos.retrieve(job_id)
+    except APIConnectionError as exc:
+        raise HTTPException(status_code=503, detail="OpenAI reel generation is unavailable") from exc
+    except APIStatusError as exc:
+        raise HTTPException(status_code=502, detail="OpenAI reel status lookup failed") from exc
+
+    status = getattr(video, "status", stored["status"])
+    if status not in {"queued", "in_progress", "completed", "failed"}:
+        status = "failed"
+    updated = {
+        **stored,
+        "status": status,
+        "model": getattr(video, "model", stored["model"]),
+        "progress": getattr(video, "progress", stored.get("progress")),
+    }
+    content: bytes | None = None
+    if status == "completed" and not (
+        request.app.state.media_dir / stored["artifact_filename"]
+    ).is_file():
+        try:
+            downloaded = await client.videos.download_content(job_id)
+            content = downloaded.content if hasattr(downloaded, "content") else downloaded
+            if not isinstance(content, bytes):
+                raise TypeError("video content was not bytes")
+        except APIConnectionError as exc:
+            raise HTTPException(status_code=503, detail="OpenAI reel download is unavailable") from exc
+        except APIStatusError as exc:
+            raise HTTPException(status_code=502, detail="OpenAI reel download failed") from exc
+        except TypeError as exc:
+            raise HTTPException(status_code=502, detail="OpenAI returned invalid reel content") from exc
+    try:
+        write_media_record(
+            directory=request.app.state.media_dir,
+            post_id=stored["post_id"],
+            media_id=stored["media_id"],
+            kind="reel",
+            extension="mp4",
+            content=content,
+            metadata=updated,
+        )
+    except OSError as exc:
+        raise HTTPException(status_code=500, detail="Could not store the generated reel") from exc
+    return _reel_response(updated)
+
+
+@app.get("/v1/media/{media_id}", tags=["media"])
+async def media_artifact(request: Request, media_id: str) -> FileResponse:
+    if not re.fullmatch(r"[a-f0-9]{32}", media_id):
+        raise HTTPException(status_code=404, detail="Generated media was not found")
+    for extension, media_type in (("png", "image/png"), ("mp4", "video/mp4")):
+        artifact_path = request.app.state.media_dir / f"{media_id}.{extension}"
+        if artifact_path.is_file():
+            return FileResponse(artifact_path, media_type=media_type, filename=artifact_path.name)
+    try:
+        _, stored = _load_media_sidecar(request.app.state.media_dir, media_id)
+    except HTTPException:
+        raise HTTPException(status_code=404, detail="Generated media artifact was not found") from None
+    if stored.get("status") != "completed":
+        raise HTTPException(status_code=409, detail="Generated media is not ready")
+    raise HTTPException(status_code=404, detail="Generated media artifact was not found")
 
 
 async def upstream_json(request: Request, url: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -210,8 +584,7 @@ async def hydrate(
         ACTION_API,
         _action(
             titles="|".join(unique_titles), redirects=1,
-            prop="info|pageterms|pageprops|revisions", inprop="url",
-            wbptterms="description", rvprop="ids|timestamp", rvlimit=1,
+            prop="info|pageterms|pageprops", inprop="url", wbptterms="description",
         ),
     ) if unique_titles else {"query": {"pages": []}}
     by_title = {page.get("title"): page for page in _pages(metadata) if page.get("pageid")}
@@ -222,13 +595,21 @@ async def hydrate(
             continue
         extract = await upstream_json(
             request, ACTION_API,
-            _action(titles=title, redirects=1, prop="extracts", explaintext=1, exsectionformat="plain"),
+            _action(
+                titles=title,
+                redirects=1,
+                prop="extracts|revisions",
+                explaintext=1,
+                exsectionformat="plain",
+                rvprop="ids|timestamp",
+                rvlimit=1,
+            ),
         )
         extracted_page = next((item for item in _pages(extract) if item.get("pageid")), None)
         text = (extracted_page or {}).get("extract", "")
         if not text:
             continue
-        revisions = page.get("revisions", [])
+        revisions = (extracted_page or {}).get("revisions", [])
         terms = page.get("terms", {}).get("description", [])
         records.append({
             "rank": len(records) + 1,
