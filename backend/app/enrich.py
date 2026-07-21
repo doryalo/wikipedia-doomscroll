@@ -39,6 +39,8 @@ def run_directory(
         for path in files:
             try:
                 file_stats = pipeline.process_file(path, force=force)
+                if not file_stats["failed"]:
+                    path.unlink()
                 for status, count in file_stats.items():
                     stats[status] += count
             except Exception:

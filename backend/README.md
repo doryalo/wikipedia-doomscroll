@@ -36,9 +36,10 @@ values in the file.
 
 `ENRICHMENT_INPUT_DIR` defaults to `data/raw-articles`. When the API starts it scans
 that directory in the background, then watches for added, modified, or deleted JSON
-files. Each change triggers a serial rescan; unchanged articles are skipped by their
-content hash. A second background worker turns each new current enrichment into one
-first-person post and reuses an existing fictional character with the same name.
+files. Each change triggers a serial rescan; files are deleted only after every
+article they contain is successfully ingested or already current. A second
+background worker turns each new current enrichment into one first-person post and
+reuses an existing fictional character with the same name.
 
 Then run:
 
@@ -49,8 +50,8 @@ poetry run python -m app.enrich ./raw-articles --force --limit 10
 
 The default database is `data/app.db`; override it with `--db PATH`. The command
 imports the original JSON, performs evidence extraction with `gpt-5.6-luna`, then
-discovery synthesis with `gpt-5.6-terra`. Unchanged articles are skipped unless
-`--force` is supplied.
+discovery synthesis with `gpt-5.6-terra`, then deletes the file. A file with a failed
+article remains for retry; unchanged articles are skipped unless `--force` is supplied.
 
 SQLite is migrated automatically. `current_article_enrichments` exposes the active
 analysis and tags; `enrichment_runs` retains history, and `llm_calls` records request

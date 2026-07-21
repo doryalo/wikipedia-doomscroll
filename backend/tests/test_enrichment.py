@@ -420,14 +420,18 @@ class EnrichmentTests(unittest.TestCase):
     def test_directory_continues_after_invalid_file(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / "a-bad.json").write_text("[]", encoding="utf-8")
-            write_article(root / "b-good.json")
+            bad_path = root / "a-bad.json"
+            good_path = root / "b-good.json"
+            bad_path.write_text("[]", encoding="utf-8")
+            write_article(good_path)
             stats = run_directory(
                 root,
                 database_path=root / "test.db",
                 sdk_client=FakeSDK(),
             )
-        self.assertEqual(stats, {"succeeded": 1, "skipped": 0, "failed": 1})
+            self.assertEqual(stats, {"succeeded": 1, "skipped": 0, "failed": 1})
+            self.assertTrue(bad_path.exists())
+            self.assertFalse(good_path.exists())
 
     def test_directory_enriches_page_results_schema(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -450,9 +454,7 @@ class EnrichmentTests(unittest.TestCase):
                 ).fetchall()
 
         self.assertEqual(stats, {"succeeded": 2, "skipped": 0, "failed": 0})
-        self.assertEqual(
-            repeated_stats, {"succeeded": 0, "skipped": 2, "failed": 0}
-        )
+        self.assertEqual(repeated_stats, {"succeeded": 0, "skipped": 0, "failed": 0})
         self.assertEqual(
             [(row["id"], row["language"]) for row in articles],
             [("enwiki:101", "en"), ("enwiki:102", "en")],
