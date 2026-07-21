@@ -2,6 +2,7 @@ import logging
 
 from fastapi import FastAPI
 
+from .db import initialize
 from .logger import configure_logging
 from .router import router
 
@@ -14,5 +15,5 @@ app.include_router(router)
 
 @app.on_event("startup")
 async def startup() -> None:
+    initialize()
     logger.info("API started")
-
