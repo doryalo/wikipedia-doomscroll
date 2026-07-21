@@ -2,15 +2,23 @@ import json
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
+
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 from pydantic import BaseModel
-from app.db import connect, migrate
+
+from app.db import connect, get_connection, migrate
 from app.enrich import run_directory
 from app.enrichment import ArticleDossier, EnrichmentPipeline, validate_dossier
+from app.enrichment_repository import get_post_enrichment
+from app.enrichment_routes import router as enrichment_router
 from app.openai_client import OpenAIClient, Usage, estimate_cost
+from app.post_generation import GeneratedPost, generate_pending_posts
 
 
 DOSSIER = {
@@ -104,6 +112,18 @@ SYNTHESIS = {
     ],
 }
 
+GENERATED_POST = {
+    "character_name": "Ada Lovelace",
+    "character_description": "A mathematician writing from computing's prehistory.",
+    "title": "You built the machine. I wrote its future.",
+    "content": "I published the work before modern computers existed. So why does history still act as if imagination only follows invention? My notes did not wait for permission from a machine—or from anyone who thought the future belonged to them.",
+    "historical_start_year": 1843,
+    "historical_end_year": None,
+    "historical_precision": "year",
+    "historical_date_label": "1843",
+    "evidence_ids": ["f1"],
+}
+
 
 class TinyOutput(BaseModel):
     value: int
@@ -123,6 +143,8 @@ class FakeResponses:
             output = output_type.model_validate(DOSSIER)
         elif output_type.__name__ == "DiscoverySynthesis":
             output = output_type.model_validate(SYNTHESIS)
+        elif output_type.__name__ == "GeneratedPost":
+            output = output_type.model_validate(GENERATED_POST)
         else:
             output = output_type(value=7)
         usage = SimpleNamespace(
@@ -165,6 +187,57 @@ def write_article(path: Path, *, text: str = "published influential work") -> No
     )
 
 
+def write_page_results(path: Path) -> None:
+    pages = []
+    for rank in (1, 2):
+        pages.append(
+            {
+                "rank": rank,
+                "discovery": {"method": "example"},
+                "identity": {
+                    "wiki": "enwiki",
+                    "page_id": 100 + rank,
+                    "title": f"Article {rank}",
+                    "canonical_url": f"https://en.wikipedia.org/wiki/Article_{rank}",
+                    "revision_id": 200 + rank,
+                    "revision_timestamp": "2026-07-21T10:00:00Z",
+                },
+                "card": {
+                    "description": None,
+                    "wikidata_id": None,
+                    "length_bytes": 123,
+                    "last_touched": "2026-07-21T10:00:00Z",
+                    "is_disambiguation": False,
+                },
+                "content": {"full_plain_text": "published influential work"},
+            }
+        )
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "1.0.0",
+                "example_id": "batch-example",
+                "description": "Two page enrichment example",
+                "retrieved_at": "2026-07-21T10:00:00Z",
+                "wiki": "enwiki",
+                "source": {
+                    "endpoint": "https://en.wikipedia.org/w/api.php",
+                    "parameters": {"action": "query"},
+                },
+                "expansion": {
+                    "mode": "natural",
+                    "anchor": None,
+                    "shortfall": True,
+                    "note": None,
+                },
+                "result_count": len(pages),
+                "pages": pages,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 class EnrichmentTests(unittest.TestCase):
     def setUp(self) -> None:
         self.connection = connect(":memory:")
@@ -199,6 +272,12 @@ class EnrichmentTests(unittest.TestCase):
             }
             <= tables
         )
+        post_columns = {
+            row["name"]
+            for row in self.connection.execute("PRAGMA table_info(posts)")
+        }
+        self.assertIn("article_id", post_columns)
+        self.assertIn("enrichment_run_id", post_columns)
         self.assertEqual(
             estimate_cost("gpt-5.6-luna", Usage(1000, 100, 200, 25, 1200)),
             Decimal("0.002110000000"),
@@ -349,6 +428,156 @@ class EnrichmentTests(unittest.TestCase):
                 sdk_client=FakeSDK(),
             )
         self.assertEqual(stats, {"succeeded": 1, "skipped": 0, "failed": 1})
+
+    def test_directory_enriches_page_results_schema(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_page_results(root / "page-results.json")
+            database_path = root / "test.db"
+            stats = run_directory(
+                root,
+                database_path=database_path,
+                sdk_client=FakeSDK(),
+            )
+            repeated_stats = run_directory(
+                root,
+                database_path=database_path,
+                sdk_client=FakeSDK(),
+            )
+            with closing(connect(database_path)) as connection:
+                articles = connection.execute(
+                    "SELECT id, language FROM articles ORDER BY id"
+                ).fetchall()
+
+        self.assertEqual(stats, {"succeeded": 2, "skipped": 0, "failed": 0})
+        self.assertEqual(
+            repeated_stats, {"succeeded": 0, "skipped": 2, "failed": 0}
+        )
+        self.assertEqual(
+            [(row["id"], row["language"]) for row in articles],
+            [("enwiki:101", "en"), ("enwiki:102", "en")],
+        )
+
+    def test_post_worker_creates_post_and_reuses_character(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            database_path = root / "posts.db"
+            article_path = root / "article.json"
+            write_article(article_path)
+            with closing(connect(database_path)) as connection:
+                migrate(connection)
+                EnrichmentPipeline(
+                    connection,
+                    OpenAIClient(connection, sdk_client=FakeSDK()),
+                ).process(article_path)
+                connection.execute(
+                    """
+                    INSERT INTO fictional_characters (id, name, description)
+                    VALUES ('existing-ada', 'Ada Lovelace', 'Existing character')
+                    """
+                )
+                connection.commit()
+
+            self.assertEqual(
+                generate_pending_posts(database_path, sdk_client=FakeSDK()),
+                {"succeeded": 1, "skipped": 0, "failed": 0},
+            )
+            self.assertEqual(
+                generate_pending_posts(database_path, sdk_client=FakeSDK()),
+                {"succeeded": 0, "skipped": 0, "failed": 0},
+            )
+            with closing(connect(database_path)) as connection:
+                post = connection.execute("SELECT * FROM posts").fetchone()
+                self.assertEqual(post["fictional_character_id"], "existing-ada")
+                self.assertEqual(post["article_id"], "ada")
+                self.assertIsNotNone(post["enrichment_run_id"])
+                self.assertEqual(json.loads(post["tags"]), ["computing-history"])
+                self.assertIn("future", post["title"].lower())
+                self.assertEqual(
+                    connection.execute(
+                        "SELECT COUNT(*) FROM fictional_characters"
+                    ).fetchone()[0],
+                    1,
+                )
+                call = connection.execute(
+                    "SELECT operation, status FROM llm_calls ORDER BY id DESC LIMIT 1"
+                ).fetchone()
+                self.assertEqual(
+                    (call["operation"], call["status"]),
+                    ("post_generation", "succeeded"),
+                )
+                old_run_id = post["enrichment_run_id"]
+                EnrichmentPipeline(
+                    connection,
+                    OpenAIClient(connection, sdk_client=FakeSDK()),
+                ).process(article_path, force=True)
+                self.assertEqual(
+                    get_post_enrichment(connection, post["id"])["enrichment"][
+                        "enrichment_run_id"
+                    ],
+                    old_run_id,
+                )
+
+    def test_enrichment_endpoints(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            database_path = root / "api.db"
+            article_path = root / "article.json"
+            write_article(article_path)
+            with closing(connect(database_path)) as connection:
+                migrate(connection)
+                pipeline = EnrichmentPipeline(
+                    connection,
+                    OpenAIClient(connection, sdk_client=FakeSDK()),
+                )
+                pipeline.process(article_path)
+                connection.execute(
+                    "INSERT INTO fictional_characters (id, name) VALUES ('ada-character', 'Ada')"
+                )
+                connection.execute(
+                    """
+                    INSERT INTO posts (
+                        id, fictional_character_id, title, content, content_type,
+                        historical_start_year, historical_precision,
+                        historical_date_label, article_id
+                    ) VALUES (
+                        'ada-post', 'ada-character', 'A post', 'Post body', 'text',
+                        1843, 'year', '1843', 'ada'
+                    )
+                    """
+                )
+                connection.commit()
+
+            api = FastAPI()
+            api.include_router(enrichment_router)
+
+            def database_override():
+                with closing(connect(database_path)) as connection:
+                    yield connection
+
+            api.dependency_overrides[get_connection] = database_override
+            with TestClient(api) as client:
+                self.assertEqual(len(client.get("/enrichments").json()), 1)
+                self.assertEqual(
+                    client.get("/enrichments/ada").json()["article_id"], "ada"
+                )
+                self.assertEqual(client.get("/tags").json()[0]["article_count"], 1)
+                self.assertEqual(
+                    len(
+                        client.get(
+                            "/tags/topic/computing-history/enrichments"
+                        ).json()
+                    ),
+                    1,
+                )
+                self.assertEqual(
+                    client.get("/posts/ada-post/enrichment").json()["enrichment"][
+                        "article_id"
+                    ],
+                    "ada",
+                )
+                self.assertEqual(client.get("/enrichments/missing").status_code, 404)
+                self.assertEqual(client.get("/enrichments?limit=0").status_code, 422)
 
 
 if __name__ == "__main__":

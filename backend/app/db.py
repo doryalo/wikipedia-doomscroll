@@ -1,5 +1,6 @@
 import sqlite3
 import uuid
+from collections.abc import Iterator
 from contextlib import closing
 from pathlib import Path
 
@@ -20,6 +21,11 @@ def connect(path: str | Path = DATABASE_PATH) -> sqlite3.Connection:
 
 def new_id() -> str:
     return str(uuid.uuid4())
+
+
+def get_connection() -> Iterator[sqlite3.Connection]:
+    with closing(connect()) as connection:
+        yield connection
 
 
 def migrate(connection: sqlite3.Connection) -> None:

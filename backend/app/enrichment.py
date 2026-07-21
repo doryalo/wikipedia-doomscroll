@@ -8,7 +8,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    AnyUrl,
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from .openai_client import OpenAIClient
 
@@ -52,12 +60,69 @@ class SourceArticle(BaseModel):
             raise ValueError("must not be empty")
         return value
 
-    @field_validator("language")
-    @classmethod
-    def english_only(cls, value: str) -> str:
-        if value.lower() != "en":
-            raise ValueError("only English articles are supported")
-        return "en"
+
+
+class PageResultsSource(StrictModel):
+    endpoint: AnyUrl
+    parameters: dict[str, object]
+
+
+class PageResultsExpansion(StrictModel):
+    mode: Literal["natural", "expanded"]
+    anchor: str | None
+    shortfall: bool
+    note: str | None
+
+
+class PageIdentity(StrictModel):
+    wiki: str = Field(min_length=1)
+    page_id: int = Field(gt=0)
+    title: str = Field(min_length=1)
+    canonical_url: AnyUrl
+    revision_id: int = Field(gt=0)
+    revision_timestamp: AwareDatetime
+
+
+class PageCard(StrictModel):
+    description: str | None
+    wikidata_id: str | None
+    length_bytes: int = Field(ge=0)
+    last_touched: AwareDatetime
+    is_disambiguation: bool
+
+
+class PageContent(StrictModel):
+    full_plain_text: str = Field(min_length=1)
+
+
+class PageResult(StrictModel):
+    rank: int = Field(ge=1, le=10)
+    discovery: dict[str, object]
+    identity: PageIdentity
+    card: PageCard
+    content: PageContent
+
+
+class PageResults(StrictModel):
+    schema_version: Literal["1.0.0"]
+    example_id: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    retrieved_at: AwareDatetime
+    wiki: str = Field(min_length=1)
+    source: PageResultsSource
+    expansion: PageResultsExpansion
+    result_count: int = Field(ge=0, le=10)
+    pages: list[PageResult] = Field(max_length=10)
+
+    @model_validator(mode="after")
+    def consistent_page_count(self) -> "PageResults":
+        if self.result_count != len(self.pages):
+            raise ValueError("result_count must equal the number of pages")
+        if not self.expansion.shortfall and self.result_count != 10:
+            raise ValueError("non-shortfall page results must contain 10 pages")
+        if any(page.identity.wiki != self.wiki for page in self.pages):
+            raise ValueError("every page wiki must match the top-level wiki")
+        return self
 
 
 class KeyFact(StrictModel):
@@ -277,6 +342,29 @@ class EnrichmentPipeline:
 
     def process(self, path: Path, *, force: bool = False) -> str:
         article, raw_json, content_hash = load_article(path)
+        return self._process(article, raw_json, content_hash, path, force=force)
+
+    def process_file(self, path: Path, *, force: bool = False) -> dict[str, int]:
+        stats = {"succeeded": 0, "skipped": 0, "failed": 0}
+        for article, raw_json, content_hash in load_articles(path):
+            try:
+                result = self._process(
+                    article, raw_json, content_hash, path, force=force
+                )
+                stats[result] += 1
+            except Exception:
+                stats["failed"] += 1
+        return stats
+
+    def _process(
+        self,
+        article: SourceArticle,
+        raw_json: str,
+        content_hash: str,
+        path: Path,
+        *,
+        force: bool,
+    ) -> str:
         self._upsert_article(article, raw_json, path, content_hash)
         if not force and self._is_current(article.id, content_hash):
             logger.info("enrichment.skipped article_id=%s path=%s", article.id, path)
@@ -503,15 +591,46 @@ class EnrichmentPipeline:
 
 
 def load_article(path: Path) -> tuple[SourceArticle, str, str]:
+    articles = load_articles(path)
+    if len(articles) != 1:
+        raise ValueError("article JSON must contain exactly one article")
+    return articles[0]
+
+
+def load_articles(path: Path) -> list[tuple[SourceArticle, str, str]]:
     raw_json = path.read_text(encoding="utf-8")
     payload = json.loads(raw_json)
     if not isinstance(payload, dict):
         raise ValueError("article JSON must be an object")
-    article = SourceArticle.model_validate(payload)
+    if "pages" not in payload:
+        return [(SourceArticle.model_validate(payload), raw_json, _content_hash(payload))]
+
+    results = PageResults.model_validate(payload)
+    return [
+        (
+            SourceArticle(
+                id=f"{page.identity.wiki}:{page.identity.page_id}",
+                title=page.identity.title,
+                text=page.content.full_plain_text,
+                url=str(page.identity.canonical_url),
+                language=_wiki_language(page.identity.wiki),
+            ),
+            raw_json,
+            _content_hash(page_payload),
+        )
+        for page, page_payload in zip(results.pages, payload["pages"], strict=True)
+    ]
+
+
+def _content_hash(payload: object) -> str:
     canonical = json.dumps(
         payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
-    return article, raw_json, hashlib.sha256(canonical).hexdigest()
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def _wiki_language(wiki: str) -> str:
+    return wiki.removesuffix("wiki") or wiki
 
 
 def validate_evidence(
