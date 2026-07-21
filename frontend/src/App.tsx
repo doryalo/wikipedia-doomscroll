@@ -31,10 +31,18 @@ const VARIANT_MAP: Record<string, NonNullable<BadgeProps["variant"]>> = {
   ancient: "ww2", egypt: "ww2", rome: "ww2", naval: "ww2",
 }
 
+const ALL_VARIANTS: NonNullable<BadgeProps["variant"]>[] = ["science", "usa", "art", "ww2", "popCulture"]
+
+function hashVariant(tag: string): NonNullable<BadgeProps["variant"]> {
+  let h = 0
+  for (const c of tag) h = (h * 31 + c.charCodeAt(0)) & 0xffff
+  return ALL_VARIANTS[h % ALL_VARIANTS.length]
+}
+
 function tagToTopic(tag: string): Topic {
   return {
     name: tag.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
-    variant: VARIANT_MAP[tag] ?? "science",
+    variant: VARIANT_MAP[tag.toLowerCase()] ?? hashVariant(tag),
   }
 }
 
