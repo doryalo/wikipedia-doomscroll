@@ -268,7 +268,7 @@ export default function App() {
         headline: item.sourceTitle ?? item.profileName,
         content: item.contentText,
         likes: Math.floor(Math.random() * 9800) + 200,
-        comments: item.commentsCount,
+        comments: Math.floor(Math.random() * 200) + 5,
         shares: item.sharesCount || undefined,
         source: item.sourceTitle ?? item.profileName,
         sourceUrl: item.sourceUrl,
@@ -364,7 +364,6 @@ export default function App() {
             >
               <ArrowLeft className="size-4" />
             </button>
-            <span className="flex size-9 items-center justify-center rounded-xl bg-brand text-white"><History className="size-5" /></span>
             <span className="font-brand text-xl font-black tracking-tight text-ink">LearnScroll</span>
           </div>
 
