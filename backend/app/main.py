@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 async def lifespan(_: FastAPI):
     with closing(connect()) as connection:
         migrate(connection)
-    seed_demo_data()
     tasks = [
         asyncio.create_task(watch_enrichment_directory(configured_input_dir())),
         asyncio.create_task(watch_enrichments_for_posts()),
