@@ -72,20 +72,19 @@ async def ready() -> dict[str, str]:
     return {"status": "ready"}
 
 
-def _decode_cursor(cursor: str) -> tuple[str, str]:
+def _decode_cursor(cursor: str) -> str:
     try:
         padded_cursor = cursor + "=" * (-len(cursor) % 4)
-        payload = base64.urlsafe_b64decode(padded_cursor).decode()
-        created_at, post_id = json.loads(payload)
-        if not isinstance(created_at, str) or not isinstance(post_id, str):
+        post_id = json.loads(base64.urlsafe_b64decode(padded_cursor).decode())
+        if not isinstance(post_id, str):
             raise ValueError
-        return created_at, post_id
+        return post_id
     except (ValueError, TypeError, UnicodeDecodeError, binascii.Error):
         raise HTTPException(status_code=400, detail="invalid cursor") from None
 
 
-def _encode_cursor(created_at: str, post_id: str) -> str:
-    payload = json.dumps([created_at, post_id], separators=(",", ":")).encode()
+def _encode_cursor(post_id: str) -> str:
+    payload = json.dumps(post_id, separators=(",", ":")).encode()
     return base64.urlsafe_b64encode(payload).decode().rstrip("=")
 
 
@@ -94,7 +93,7 @@ async def feed(
     cursor: str | None = None,
     limit: int = Query(default=20, ge=1, le=50),
 ) -> dict[str, object]:
-    """Return newest posts first, using a stable createdAt/id cursor."""
+    """Return posts in stable descending UUID order."""
     return _paginated_posts(cursor=cursor, limit=limit)
 
 
@@ -217,22 +216,13 @@ def _paginated_posts(
     filter_sql: str = "1 = 1",
     parameters: dict[str, str] | None = None,
 ) -> dict[str, object]:
-    cursor_created_at, cursor_post_id = _decode_cursor(cursor) if cursor else (None, None)
+    cursor_post_id = _decode_cursor(cursor) if cursor else None
     query_parameters = parameters or {}
-    query_parameters.update(
-        {
-            "cursor_created_at": cursor_created_at,
-            "cursor_post_id": cursor_post_id,
-        }
-    )
+    query_parameters["cursor_post_id"] = cursor_post_id
     rows = _fetch_posts(
         f"""
         ({filter_sql})
-        AND (
-            :cursor_created_at IS NULL
-            OR posts.created_at < :cursor_created_at
-            OR (posts.created_at = :cursor_created_at AND posts.id < :cursor_post_id)
-        )
+        AND (:cursor_post_id IS NULL OR posts.id < :cursor_post_id)
         """,
         query_parameters,
         limit + 1,
@@ -240,7 +230,7 @@ def _paginated_posts(
     has_next_page = len(rows) > limit
     page_rows = rows[:limit]
     next_cursor = (
-        _encode_cursor(page_rows[-1]["created_at"], page_rows[-1]["id"])
+        _encode_cursor(page_rows[-1]["id"])
         if has_next_page and page_rows
         else None
     )
@@ -255,7 +245,7 @@ def _fetch_posts(
             f"""
             {POST_SELECT}
             WHERE {where_sql}
-            ORDER BY posts.created_at DESC, posts.id DESC
+            ORDER BY posts.id DESC
             LIMIT :row_limit
             """,
             {**parameters, "row_limit": limit},
