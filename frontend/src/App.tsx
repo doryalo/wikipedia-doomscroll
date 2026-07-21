@@ -341,7 +341,23 @@ export default function App() {
       {/* ── Sticky header ── */}
       <header className="sticky top-0 z-20 border-b border-line bg-white/95 px-4 backdrop-blur sm:px-6">
         <div className="mx-auto flex h-16 max-w-[760px] items-center justify-between gap-3">
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Back arrow — appears on submit */}
+            <button
+              onClick={handleBack}
+              className="rounded-lg p-1.5 text-muted transition-all hover:bg-page hover:text-ink"
+              style={{
+                opacity: submitted ? 1 : 0,
+                pointerEvents: submitted ? "auto" : "none",
+                transitionDuration: "300ms",
+                width: submitted ? undefined : 0,
+                marginRight: submitted ? undefined : 0,
+                overflow: "hidden",
+              }}
+              title="Back to home"
+            >
+              <ArrowLeft className="size-4" />
+            </button>
             <span className="flex size-9 items-center justify-center rounded-xl bg-brand text-white"><History className="size-5" /></span>
             <span className="font-brand text-xl font-black tracking-tight text-ink">LearnScroll</span>
           </div>
@@ -396,20 +412,6 @@ export default function App() {
               </>
             )}
 
-            {/* Back button — appears on submit */}
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-muted transition-all hover:bg-page hover:text-ink"
-              style={{
-                opacity: submitted ? 1 : 0,
-                pointerEvents: submitted ? "auto" : "none",
-                transitionDuration: "300ms",
-              }}
-              title="Back to home"
-            >
-              <ArrowLeft className="size-3.5" />
-              Go
-            </button>
           </div>
         </div>
       </header>
