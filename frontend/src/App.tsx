@@ -239,6 +239,7 @@ export default function App() {
   const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null)
   const [streak, setStreak] = useState(0)
   const [onThisDay, setOnThisDay] = useState<ApiItem | null>(null)
+  const [topics, setTopics] = useState<Topic[]>([])
 
   const sentinel = useRef<HTMLDivElement>(null)
   const page = useRef(0)
@@ -263,6 +264,14 @@ export default function App() {
       const bounds = yearBoundsOf(items)
       setDataYearBounds(bounds)
       setHeroYearRange(bounds)
+      const seen = new Set<string>()
+      const unique: Topic[] = []
+      for (const item of items) {
+        for (const tag of item.tags.slice(0, 2)) {
+          if (!seen.has(tag)) { seen.add(tag); unique.push(tagToTopic(tag)) }
+        }
+      }
+      setTopics(unique)
       // Pick "On This Day" post deterministically by day-of-year
       if (items.length) {
         const doy = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 864e5)
@@ -302,10 +311,7 @@ export default function App() {
     }, first ? 600 : 800)
   }, [])
 
-  function exploreYears([lo, hi]: [number, number]) {
-    const matches = allApiItems.current
-      .filter(item => { const y = item.historicalDate.startYear; return y >= lo && y <= hi })
-      .sort((a, b) => a.historicalDate.startYear - b.historicalDate.startYear)
+  function commitResults(matches: ApiItem[]) {
     matchesRef.current = matches
     const bounds = yearBoundsOf(matches)
     page.current = 0
@@ -315,6 +321,23 @@ export default function App() {
     setYearBounds(bounds)
     setYearRange(bounds)
     load(true)
+  }
+
+  function exploreYears([lo, hi]: [number, number]) {
+    commitResults(
+      allApiItems.current
+        .filter(item => { const y = item.historicalDate.startYear; return y >= lo && y <= hi })
+        .sort((a, b) => a.historicalDate.startYear - b.historicalDate.startYear),
+    )
+  }
+
+  function exploreTopic(tagName: string) {
+    const normalized = tagName.toLowerCase().replace(/\s+/g, "-")
+    commitResults(allApiItems.current.filter(item => item.tags.some(t => t.toLowerCase() === normalized)))
+  }
+
+  function exploreAll() {
+    commitResults(allApiItems.current)
   }
 
   function handleBack() {
@@ -467,6 +490,29 @@ export default function App() {
             >
               Explore
             </button>
+
+            {topics.length > 0 && (
+              <div className="flex flex-col items-center gap-3">
+                <p className="text-sm font-medium text-muted">Or explore a topic</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Badge
+                    role="button" tabIndex={0}
+                    onClick={exploreAll}
+                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); exploreAll() } }}
+                    className="cursor-pointer border-line bg-white text-ink transition-transform hover:scale-105 hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1"
+                  >All</Badge>
+                  {topics.map(t => (
+                    <Badge
+                      key={t.name} variant={t.variant}
+                      role="button" tabIndex={0}
+                      onClick={() => exploreTopic(t.name)}
+                      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); exploreTopic(t.name) } }}
+                      className="cursor-pointer transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1"
+                    >{t.name}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           </div>
           </div>
