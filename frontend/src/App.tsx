@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { ArrowLeft, Heart, History, MessageCircle, Search, Send } from "lucide-react"
 import { Badge, type BadgeProps } from "./components/ui/badge"
 import { YearRangeFilter } from "./components/YearRangeFilter"
+import { AuthModal, type CurrentUser } from "./components/AuthModal"
 
 type Topic = { name: string; variant: NonNullable<BadgeProps["variant"]> }
 type Post = { id: string; apiId: string; year: number; date: string; headline: string; content: string; likes: number; comments: number; shares?: number; source: string; sourceUrl?: string; topics: Topic[] }
@@ -81,9 +82,9 @@ function SkeletonCard() {
   )
 }
 
-const DEMO_PROFILE_ID = "profile-ada"
+type Liker = { profileId: string; username: string }
 
-function PostCard({ post }: { post: Post }) {
+function PostCard({ post, currentUser, onAuthRequired }: { post: Post; currentUser: CurrentUser | null; onAuthRequired: () => void }) {
   const [expanded, setExpanded] = useState(false)
   const [liked, setLiked] = useState(false)
   const [popKey, setPopKey] = useState(0)
@@ -91,37 +92,58 @@ function PostCard({ post }: { post: Post }) {
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [likers, setLikers] = useState<Liker[] | null>(null)
+  const [showLikers, setShowLikers] = useState(false)
+  const likerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const long = post.content.length > 180
   const copy = !expanded && long ? `${post.content.slice(0, 180).trimEnd()}…` : post.content
 
   const toggleLike = async () => {
+    if (!currentUser) { onAuthRequired(); return }
     const nowLiked = !liked
     setLiked(nowLiked)
-    if (nowLiked) setPopKey(k => k + 1)
     if (nowLiked) {
+      setPopKey(k => k + 1)
+      setLikers(null) // invalidate cache so next hover re-fetches
       await fetch(`/api/posts/${post.apiId}/likes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profileId: DEMO_PROFILE_ID }),
+        body: JSON.stringify({ profileId: currentUser.id }),
       })
     }
   }
 
   const submitComment = async () => {
+    if (!currentUser) { onAuthRequired(); return }
     const text = commentText.trim()
     if (!text || submitting) return
     setSubmitting(true)
     const res = await fetch(`/api/posts/${post.apiId}/comments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ profileId: DEMO_PROFILE_ID, content: text }),
+      body: JSON.stringify({ profileId: currentUser.id, content: text }),
     })
     if (res.ok) {
       setCommentText("")
       setCommentCount(c => c + 1)
     }
     setSubmitting(false)
+  }
+
+  const handleLikeMouseEnter = () => {
+    likerTimer.current = setTimeout(async () => {
+      if (likers === null) {
+        const res = await fetch(`/api/posts/${post.apiId}/likes`)
+        if (res.ok) setLikers(await res.json())
+      }
+      setShowLikers(true)
+    }, 300)
+  }
+
+  const handleLikeMouseLeave = () => {
+    if (likerTimer.current) clearTimeout(likerTimer.current)
+    setShowLikers(false)
   }
 
   return (
@@ -144,10 +166,22 @@ function PostCard({ post }: { post: Post }) {
         </p>
       </div>
       <div className="flex items-center gap-8 border-t border-line/60 px-5 py-3 text-sm text-muted sm:px-6">
-        <button onClick={toggleLike} className={`flex cursor-pointer items-center gap-1.5 transition-colors ${liked ? "text-red-500" : "hover:text-red-400"}`}>
-          <Heart key={popKey} className={`size-4 ${liked ? "heart-pop fill-red-500" : ""}`} />{format(post.likes + (liked ? 1 : 0))}
-        </button>
-        <button onClick={() => setShowComments(c => !c)} className={`flex cursor-pointer items-center gap-1.5 transition-colors ${showComments ? "text-brand" : "hover:text-brand"}`}>
+        <div className="relative" onMouseEnter={handleLikeMouseEnter} onMouseLeave={handleLikeMouseLeave}>
+          <button onClick={toggleLike} className={`flex cursor-pointer items-center gap-1.5 transition-colors ${liked ? "text-red-500" : "hover:text-red-400"}`}>
+            <Heart key={popKey} className={`size-4 ${liked ? "heart-pop fill-red-500" : ""}`} />{format(post.likes + (liked ? 1 : 0))}
+          </button>
+          {showLikers && (
+            <div className="absolute bottom-full left-0 mb-2 min-w-[120px] rounded-xl border border-line bg-white px-3 py-2 shadow-[0_8px_24px_rgba(28,38,63,.12)] text-xs text-ink z-10">
+              {likers === null
+                ? <span className="text-muted">Loading…</span>
+                : likers.length === 0
+                  ? <span className="text-muted">No likes yet</span>
+                  : likers.map(l => <div key={l.profileId} className="py-0.5 font-medium">@{l.username}</div>)
+              }
+            </div>
+          )}
+        </div>
+        <button onClick={() => { if (!currentUser) { onAuthRequired(); return } setShowComments(c => !c) }} className={`flex cursor-pointer items-center gap-1.5 transition-colors ${showComments ? "text-brand" : "hover:text-brand"}`}>
           <MessageCircle className="size-4" />{format(commentCount)}
         </button>
         {post.shares && <span className="flex items-center gap-1.5"><Send className="size-4" />{post.shares}</span>}
@@ -185,6 +219,8 @@ export default function App() {
   const [yearBounds, setYearBounds] = useState<[number, number]>([1780, 2026])
   const [yearRange, setYearRange] = useState<[number, number]>([1780, 2026])
   const [topics, setTopics] = useState<Topic[]>([])
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null)
 
   const sentinel = useRef<HTMLDivElement>(null)
   const page = useRef(0)
@@ -294,6 +330,14 @@ export default function App() {
 
   return (
     <>
+      {authModal && (
+        <AuthModal
+          initialTab={authModal}
+          onSuccess={user => { setCurrentUser(user); setAuthModal(null) }}
+          onClose={() => setAuthModal(null)}
+        />
+      )}
+
       {/* ── Sticky header ── */}
       <header className="sticky top-0 z-20 border-b border-line bg-white/95 px-4 backdrop-blur sm:px-6">
         <div className="mx-auto flex h-16 max-w-[760px] items-center justify-between gap-3">
@@ -323,20 +367,50 @@ export default function App() {
             </label>
           </form>
 
-          {/* Back button — appears on submit */}
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-muted transition-all hover:bg-page hover:text-ink"
-            style={{
-              opacity: submitted ? 1 : 0,
-              pointerEvents: submitted ? "auto" : "none",
-              transitionDuration: "300ms",
-            }}
-            title="Back to home"
-          >
-            <ArrowLeft className="size-3.5" />
-            Go
-          </button>
+          {/* Auth / user controls */}
+          <div className="flex flex-shrink-0 items-center gap-2">
+            {currentUser ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-muted">@{currentUser.username}</span>
+                <button
+                  onClick={() => setCurrentUser(null)}
+                  className="rounded-lg px-2 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-page hover:text-ink"
+                >
+                  Log out
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => setAuthModal("login")}
+                  className="rounded-lg px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-page hover:text-ink"
+                >
+                  Log in
+                </button>
+                <button
+                  onClick={() => setAuthModal("signup")}
+                  className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white transition-opacity hover:bg-brand/90"
+                >
+                  Sign up
+                </button>
+              </>
+            )}
+
+            {/* Back button — appears on submit */}
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-muted transition-all hover:bg-page hover:text-ink"
+              style={{
+                opacity: submitted ? 1 : 0,
+                pointerEvents: submitted ? "auto" : "none",
+                transitionDuration: "300ms",
+              }}
+              title="Back to home"
+            >
+              <ArrowLeft className="size-3.5" />
+              Go
+            </button>
+          </div>
         </div>
       </header>
 
@@ -424,7 +498,7 @@ export default function App() {
                 <YearRangeFilter min={yearBounds[0]} max={yearBounds[1]} value={yearRange} onChange={setYearRange} />
                 {loading
                   ? Array.from({ length: 3 }, (_, i) => <SkeletonCard key={i} />)
-                  : visiblePosts.map(post => <PostCard key={post.id} post={post} />)
+                  : visiblePosts.map(post => <PostCard key={post.id} post={post} currentUser={currentUser} onAuthRequired={() => setAuthModal("login")} />)
                 }
                 {moreLoading && Array.from({ length: 3 }, (_, i) => <SkeletonCard key={i} />)}
                 <div ref={sentinel} className="h-4" />

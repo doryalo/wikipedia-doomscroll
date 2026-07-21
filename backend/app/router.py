@@ -1,6 +1,8 @@
 import base64
 import binascii
+import hashlib
 import json
+import secrets
 import sqlite3
 from contextlib import closing
 
@@ -19,6 +21,31 @@ class LikeRequest(BaseModel):
 class CommentRequest(BaseModel):
     profileId: str
     content: str = Field(min_length=1, max_length=5_000)
+
+
+class SignupRequest(BaseModel):
+    username: str = Field(min_length=2, max_length=30)
+    password: str = Field(min_length=6)
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+def _hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    h = hashlib.sha256(f"{salt}:{password}".encode()).hexdigest()
+    return f"{salt}:{h}"
+
+
+def _verify_password(password: str, stored: str) -> bool:
+    parts = stored.split(":", 1)
+    if len(parts) != 2:
+        return False
+    salt, expected = parts
+    h = hashlib.sha256(f"{salt}:{password}".encode()).hexdigest()
+    return h == expected
 
 
 POST_SELECT = """
@@ -136,6 +163,52 @@ async def create_comment(post_id: str, request: CommentRequest) -> dict[str, str
         "content": comment["content"],
         "createdAt": comment["created_at"],
     }
+
+
+@router.get("/posts/{post_id}/likes", tags=["posts"])
+async def get_post_likes(post_id: str) -> list[dict[str, str]]:
+    with closing(connect()) as connection:
+        _require_record(connection, "posts", post_id, "post")
+        rows = connection.execute(
+            """
+            SELECT profiles.id, profiles.username
+            FROM likes
+            JOIN profiles ON profiles.id = likes.profile_id
+            WHERE likes.post_id = ?
+            ORDER BY likes.created_at ASC
+            """,
+            (post_id,),
+        ).fetchall()
+    return [{"profileId": row["id"], "username": row["username"]} for row in rows]
+
+
+@router.post("/auth/signup", tags=["auth"], status_code=status.HTTP_201_CREATED)
+async def signup(request: SignupRequest) -> dict[str, str]:
+    profile_id = new_id()
+    password_hash = _hash_password(request.password)
+    with closing(connect()) as connection:
+        if connection.execute(
+            "SELECT 1 FROM profiles WHERE username = ? COLLATE NOCASE", (request.username,)
+        ).fetchone():
+            raise HTTPException(status_code=409, detail="username taken")
+        connection.execute(
+            "INSERT INTO profiles (id, username, password_hash) VALUES (?, ?, ?)",
+            (profile_id, request.username, password_hash),
+        )
+        connection.commit()
+    return {"id": profile_id, "username": request.username}
+
+
+@router.post("/auth/login", tags=["auth"])
+async def login(request: LoginRequest) -> dict[str, str]:
+    with closing(connect()) as connection:
+        row = connection.execute(
+            "SELECT id, username, password_hash FROM profiles WHERE username = ? COLLATE NOCASE",
+            (request.username,),
+        ).fetchone()
+    if row is None or not _verify_password(request.password, row["password_hash"]):
+        raise HTTPException(status_code=401, detail="invalid credentials")
+    return {"id": row["id"], "username": row["username"]}
 
 
 def _paginated_posts(
