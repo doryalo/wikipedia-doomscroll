@@ -1,18 +1,26 @@
 """Deterministic development fixtures for the local SQLite API."""
 
+import hashlib
 import json
 from contextlib import closing
 
 from .db import connect
 
+DEMO_PASSWORD = "learnscroll"
+
+
+def _hash_pw(password: str, salt: str) -> str:
+    h = hashlib.sha256(f"{salt}:{password}".encode()).hexdigest()
+    return f"{salt}:{h}"
+
 
 def seed_demo_data() -> None:
     """Insert deterministic development records without replacing local data."""
     profiles = (
-        ("profile-ada", "ada", "demo-password-hash"),
-        ("profile-sam", "sam", "demo-password-hash"),
-        ("profile-morgan", "morgan", "demo-password-hash"),
-        ("profile-riley", "riley", "demo-password-hash"),
+        ("profile-ada",    "ada",    _hash_pw(DEMO_PASSWORD, "seed-salt-ada")),
+        ("profile-sam",    "sam",    _hash_pw(DEMO_PASSWORD, "seed-salt-sam")),
+        ("profile-morgan", "morgan", _hash_pw(DEMO_PASSWORD, "seed-salt-morgan")),
+        ("profile-riley",  "riley",  _hash_pw(DEMO_PASSWORD, "seed-salt-riley")),
     )
     characters = (
         ("character-cleopatra", "Cleopatra", "Last active ruler of the Ptolemaic Kingdom of Egypt.", "-0069-01-01", "-0030-08-12", "https://upload.wikimedia.org/wikipedia/commons/9/9e/Cleopatra_VII_Altes_Museum_Berlin.jpg"),
@@ -79,6 +87,11 @@ def seed_demo_data() -> None:
 
     with closing(connect()) as connection:
         connection.executemany("INSERT OR IGNORE INTO profiles (id, username, password_hash) VALUES (?, ?, ?)", profiles)
+        for pid, _uname, pw_hash in profiles:
+            connection.execute(
+                "UPDATE profiles SET password_hash = ? WHERE id = ? AND password_hash = 'demo-password-hash'",
+                (pw_hash, pid),
+            )
         connection.executemany("INSERT OR IGNORE INTO fictional_characters (id, name, description, birth_date, death_date, profile_photo_url) VALUES (?, ?, ?, ?, ?, ?)", characters)
         connection.executemany("INSERT OR IGNORE INTO groups (id, name, description) VALUES (?, ?, ?)", groups)
         for index, (character_id, title, content, year, precision, date_label, tags, post_groups) in enumerate(post_specs, start=1):

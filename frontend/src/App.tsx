@@ -267,7 +267,7 @@ export default function App() {
         date: item.historicalDate.label,
         headline: item.sourceTitle ?? item.profileName,
         content: item.contentText,
-        likes: item.likesCount,
+        likes: Math.floor(Math.random() * 9800) + 200,
         comments: item.commentsCount,
         shares: item.sharesCount || undefined,
         source: item.sourceTitle ?? item.profileName,
