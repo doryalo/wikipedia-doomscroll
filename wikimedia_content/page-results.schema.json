@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wikipedia-doomscroll.local/page-results.schema.json",
+  "title": "Wikipedia Doomscroll page results",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "example_id",
+    "description",
+    "retrieved_at",
+    "wiki",
+    "source",
+    "expansion",
+    "result_count",
+    "pages"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "example_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "retrieved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "wiki": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "endpoint",
+        "parameters"
+      ],
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "format": "uri"
+        },
+        "parameters": {
+          "type": "object"
+        }
+      }
+    },
+    "expansion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "anchor",
+        "shortfall",
+        "note"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "natural",
+            "expanded"
+          ]
+        },
+        "anchor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "shortfall": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "result_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "pages": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "$ref": "#/$defs/page"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "expansion": {
+            "properties": {
+              "shortfall": {
+                "const": false
+              }
+            },
+            "required": [
+              "shortfall"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result_count": {
+            "const": 10
+          },
+          "pages": {
+            "minItems": 10
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rank",
+        "discovery",
+        "identity",
+        "card",
+        "content"
+      ],
+      "properties": {
+        "rank": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "discovery": {
+          "type": "object"
+        },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "wiki",
+            "page_id",
+            "title",
+            "canonical_url",
+            "revision_id",
+            "revision_timestamp"
+          ],
+          "properties": {
+            "wiki": {
+              "type": "string",
+              "minLength": 1
+            },
+            "page_id": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "canonical_url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "revision_id": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "revision_timestamp": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "card": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "description",
+            "wikidata_id",
+            "length_bytes",
+            "last_touched",
+            "is_disambiguation"
+          ],
+          "properties": {
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "wikidata_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "length_bytes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "last_touched": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "is_disambiguation": {
+              "type": "boolean"
+            }
+          }
+        },
+        "content": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "full_plain_text"
+          ],
+          "properties": {
+            "full_plain_text": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

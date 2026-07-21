@@ -1,0 +1,273 @@
+{
+  "schema_version": "1.0.0",
+  "example_id": "all-categories",
+  "description": "Articles expanded from the category index prefix Phys",
+  "retrieved_at": "2026-07-21T17:23:28.703428+00:00",
+  "wiki": "en.wikipedia.org",
+  "source": {
+    "endpoint": "https://en.wikipedia.org/w/api.php",
+    "parameters": {
+      "list": "allcategories",
+      "prefix": "Phys"
+    }
+  },
+  "expansion": {
+    "mode": "expanded",
+    "anchor": "Phys",
+    "shortfall": false,
+    "note": "Expanded deterministically from the recorded anchor to reach ten articles."
+  },
+  "result_count": 10,
+  "pages": [
+    {
+      "rank": 1,
+      "discovery": {
+        "source": "categorymembers",
+        "category": "Category:Physalacriaceae"
+      },
+      "identity": {
+        "wiki": "en.wikipedia.org",
+        "page_id": 591839,
+        "title": "Flammulina filiformis",
+        "canonical_url": "https://en.wikipedia.org/wiki/Flammulina_filiformis",
+        "revision_id": 1363466727,
+        "revision_timestamp": "2026-07-10T10:34:12Z"
+      },
+      "card": {
+        "description": "species of edible mushroom",
+        "wikidata_id": "Q25416839",
+        "length_bytes": 17496,
+        "last_touched": "2026-07-21T16:39:26Z",
+        "is_disambiguation": false
+      },
+      "content": {
+        "full_plain_text": "Flammulina filiformis, commonly called enoki mushroom, is a species of agaric (gilled mushroom) in the family Physalacriaceae. Until recently, the species was considered to be conspecific with the European Flammulina velutipes, but DNA sequencing has shown that the two are distinct.\nIt is widely cultivated as an edible mushroom in East Asia, where it is included in Japanese and Chinese cuisine. \n\n\nTaxonomy\nFlammulina filiformis was originally described from China in 2015 as a variety of F. velutipes, based on internal transcribed spacer sequences. Further molecular research using a combination of different sequences has shown that F. filiformis and F. velutipes are distinct and should be recognized as separate species.\n\n\nEtymology\nIn Japanese, the mushroom is known as enoki-take or enoki-dake, both meaning \"hackberry mushroom\". This is because it is often found growing at the base of hackberry (enoki) trees.\nIn Mandarin Chinese, the mushroom is called jīnzhēngū (金針菇 \"gold needle mushroom\") or jīngū (金菇 \"gold mushroom\").\nIn Korean, it is called paengi beoseot (팽이버섯) which means \"mushroom planted near catalpa\". In Vietnamese it is known as nấm kim châm. In India it is called futu.\n\n\nDescription\nThe basidiocarps are agaricoid and grow in clusters. The cap is convex at first, flattening as it expands, measuring up to 4.5 cm (1+3⁄4 in) across. The cap surface is smooth, viscid when damp, ochraceous yellow to yellow-brown. The lamellae (gills) are cream to yellowish white. The stipe (stem) is up to 8.5 mm (1⁄2 in) long, smooth, pale yellow at the apex, yellow-brown to dark brown towards the base, and lacking a ring. The spore print is white. The spores are inamyloid, smooth, and ellipsoid to cylindrical, measuring about 5 to 7 by 3 to 3.5 μm.\nThere is a significant difference in appearance between wild and cultivated basidiocarps. Cultivated enokitake are not exposed to light, resulting in white or pallid fruit bodies with long stipes and small caps.\n\n\nDistribution and habitat\nThe fungus is found on dead wood of Betula platyphylla, Broussonetia papyrifera, Dipentodon sinicus, Neolitsea sp., Salix spp, and other broad-leaved trees. It grows naturally in China, Korea, and Japan.\n\n\nNutrition\nEnoki mushrooms are 88% water, 8% carbohydrates, 3% protein, and contain negligible fat (table). In a reference amount of 100 g (3.5 oz), enoki mushrooms provide 37 calories of food energy, and are a rich source (20% or more of the Daily Value, DV) of niacin (46% DV), and pantothenic acid (28% DV), while supplying moderate amounts of thiamine, riboflavin, folate, and potassium (12-19% DV, table).\n\n\nUses\nF. filiformis has been cultivated in China since 800 AD. Commercial production in China was estimated at 1.57 million tonnes per annum in 2010, with Japan producing an additional 140,000 tonnes per annum. The fungus can be cultivated on a range of simple lignocellulosic substrates including sawdust, wheat straw, and paddy straw. Enokitake are typically grown in the dark, producing pallid fruitbodies having long and narrow stipes with undeveloped caps. Exposure to light results in more normal, short-stiped, colored fruitbodies.\n\n\nAs food\nThe mushroom is widely eaten in East Asia. Cultivated F. filiformis is sold both fresh and canned. The fungus has a crisp texture and can be refrigerated for approximately one week. It is a common ingredient for soups, especially in East Asian cuisine, but can be used for salads and other dishes.\n\n\nImproving storage\nF. filiformis extract can be added to whipped cream. It was observed that this measure helps to slow down the development of ice crystals, which would maintain the quality of whipped cream longer while storing it in a frozen state.\n\n\nNutritionally improved meat products\nF. filiformis are an object of interest in current research for their potential to enhance food products and animal feed by using the stem waste.\nStudies indicate that the addition of F. filiformis stem waste powder to meat products can improve nutritional quality by increasing dietary fiber and ash content. This ingredient also enhances tenderness, inhibits lipid and protein oxidation, and extends shelf life, without negatively impacting the texture or flavor of the meat products.\n\n\nFeed additive for livestock\nNatural feed additives have become more important in livestock farming. Following this trend, F. filiformis was checked for livestock health and production efficiency improving properties. There are studies showing that the use of Enoki mushroom residue as a feed additive offers several benefits for livestock. It enhances antioxidant enzyme activity, and improves animal digestibility, hormone levels, and immunity.\nThe addition of mushroom residue into livestock diet can reduce the feed cost and feed conversion ratio and enhance the meat quality, providing consumers with healthier and higher-quality meat products.\n\n\nCultivation\n\nF. filiformis is commonly cultivated in large-scale factories, where through mechanization, over 300,000 tons of F. filiformis can be harvested per year.\n\n\nIndoor cultivation\nF. filiformis thrives in a warm, moist environment during the incubation phase, with substrate temperatures ranging from 18 to 25 °C (64 to 77 °F). F. filiformis needs significantly cooler conditions to trigger fruiting. Pinning is triggered at temperatures ranging between 7 and 10 °C (45 and 50 °F), and the optimal temperature range for fruiting is 10 to 16 °C (50 to 61 °F). As with most fungi, F. filiformis demands elevated humidity levels—95 to 100% during pinning and 85 to 95% during fruiting.\nThe ideal size to harvest enoki mushrooms is generally recommended to be about 5–10 cm (2–4 in) long. At that time, the cap should still be tightly closed and the stem should be long and sturdy. If people grow enoki mushrooms at home, they can use a sharp knife or scissors to snip off the mushroom cluster at the base of the stem where it meets the growing medium. It's important to remove both the mushrooms and any remaining mycelium (the white, thread-like structures) from the growing medium during harvest. This helps prevent decaying, which could negatively impact future mushroom growth.\n\n\nPost-harvest handling\n\nF. filiformis have thin, delicate stems that need to be handled with care to prevent damage. The following steps are for reference. First, gently brush off any dirt or substrate with a soft brush or a damp cloth. After cleaning, separate the mushroom clusters into individual stems for easier cooking and presentation.\n\n\nStorage\nF. filiformis should be kept at temperatures between 7-10 °C (44.6-50 °F) for optimal freshness. For brief storage (fewer than 7 days), a temperature interval of 1–2 °C (34-36 °F) with 90–98% relative humidity is advised.\n\n\nProneness to Listeria\nF. filiformis have the potential to be contaminated with Listeria monocytogenes, which is why disease control centers recommend cooking the mushroom prior to consumption.\nThe Singapore Food Agency advise people to do the following to ensure food security when consuming F. filiformis:\n\nEnoki mushrooms should never be eaten raw\nInstead, make sure to cook the mushrooms properly before eating them\nIf there are cooking directions at hand, make sure to follow them\nEnoki mushrooms should be stored at cold temperatures to ensure a slower growth of microbes. This should be done even if the packaging is not opened yet\nUncooked enoki mushroom should be stored separately to avoid cross-contamination\n\n\nSee also\n\nShiitake\n\n\nReferences\n\n\nExternal links\n Media related to Flammulina filiformis at Wikimedia Commons"
+      }
+    },
+    {
+      "rank": 2,
+      "discovery": {
+        "source": "categorymembers",
+        "category": "Category:Physalacriaceae"
+      },
+      "identity": {
+        "wiki": "en.wikipedia.org",
+        "page_id": 591864,
+        "title": "Flammulina",
+        "canonical_url": "https://en.wikipedia.org/wiki/Flammulina",
+        "revision_id": 1303165764,
+        "revision_timestamp": "2025-07-29T12:24:09Z"
+      },
+      "card": {
+        "description": "genus of fungi",
+        "wikidata_id": "Q1765838",
+        "length_bytes": 3667,
+        "last_touched": "2026-07-15T16:51:37Z",
+        "is_disambiguation": false
+      },
+      "content": {
+        "full_plain_text": "Flammulina is a genus of fungi in the family Physalacriaceae. The genus, widespread in temperate regions, has been estimated to contain 10 species.\n\n\nList of species\nAs of December 2023, Index Fungorum lists the following species in Flammulina:\n\n \n\n\nReferences\n\n\nExternal links\n Media related to Flammulina at Wikimedia Commons\nThe Genus Flammulina\n\"Flammulina P.Karst\". Atlas of Living Australia."
+      }
+    },
+    {
+      "rank": 3,
+      "discovery": {
+        "source": "categorymembers",
+        "category": "Category:Physalacriaceae"
+      },
+      "identity": {
+        "wiki": "en.wikipedia.org",
+        "page_id": 14054108,
+        "title": "Armillaria socialis",
+        "canonical_url": "https://en.wikipedia.org/wiki/Armillaria_socialis",
+        "revision_id": 1207973200,
+        "revision_timestamp": "2024-02-16T05:12:17Z"
+      },
+      "card": {
+        "description": "species of fungus",
+        "wikidata_id": "Q4793491",
+        "length_bytes": 1831,
+        "last_touched": "2026-07-15T17:04:49Z",
+        "is_disambiguation": false
+      },
+      "content": {
+        "full_plain_text": "Armillaria socialis is a species of fungus in the family Physalacriaceae. It is a plant pathogen. Originally described by Augustin Pyramus de Candolle in 1815, it was transferred to Armillaria by Victor Fayod in 1889. It is found in Asia, Europe, and North America.\n\n\nSee also\nList of Armillaria species\n\n\nReferences"
+      }
+    },
+    {
+      "rank": 4,
+      "discovery": {
+        "source": "categorymembers",
+        "category": "Category:Physalacriaceae"
+      },
+      "identity": {
+        "wiki": "en.wikipedia.org",
+        "page_id": 20544891,
+        "title": "Physalacriaceae",
+        "canonical_url": "https://en.wikipedia.org/wiki/Physalacriaceae",
+        "revision_id": 1355292694,
+        "revision_timestamp": "2026-05-21T01:18:45Z"
+      },
+      "card": {
+        "description": "family of fungi",
+        "wikidata_id": "Q3041113",
+        "length_bytes": 6963,
+        "last_touched": "2026-07-15T17:08:47Z",
+        "is_disambiguation": false
+      },
+      "content": {
+        "full_plain_text": "The Physalacriaceae are a family of fungi in the order Agaricales. Species in the family have a widespread distribution, ranging from the Arctic, (Rhizomarasmius), to the tropics, e.g. Gloiocephala, and from marine sites (Mycaureola) and fresh waters (Gloiocephala) to semiarid forests (Xerula).\n\n\nDescription\nMost species in the Physalacriaceae form fruit bodies with caps and stipes. They have a monomitic hyphal system (wherein only generative hypha are produced), and clamp connections are present in the hyphae.  Basidia (spore-bearing cells) are club-shaped with two to four sterigmata. The basidiospores generally have ellipsoidal, spindle-like (fusiform), cylindrical, or tear-drop (lacrimiform) shapes; they are thin-walled, hyaline, and do not react with Melzer's reagent. The family also contains corticioid fungi (in genus Cylindrobasidium) and a secotioid species (Guyanagaster necrorhiza).\n\n\nTaxonomy\nThe family was originally defined by English mycologist E.J.H. Corner in 1970 and revised in 1985 by Jacques Berthier but neither author anticipated the application to a molecularly defined group of agarics first identified by Moncalvo and others in 2002. Molecular studies placed Physalacria, formerly the sole genus in this family, together with the agaric genera Flammulina, Xerula and Armillaria. Due to the precedence rules based on date of publication, the family name \"Physalacriaceae\" became applicable for all these fungi, making the former family \"Xerulaceae\" obsolete.\n\n\nGenera\n\n\nSee also\nList of Agaricales families\n\n\nReferences\n\n\nExternal links\n\"Physalacriaceae Corner\". Atlas of Living Australia."
+      }
+    },
+    {
+      "rank": 5,
+      "discovery": {
+        "source": "categorymembers",
+        "category": "Category:Physalacriaceae"
+      },
+      "identity": {
+        "wiki": "en.wikipedia.org",
+        "page_id": 22358951,
+        "title": "Cyptotrama asprata",
+        "canonical_url": "https://en.wikipedia.org/wiki/Cyptotrama_asprata",
+        "revision_id": 1351735455,
+        "revision_timestamp": "2026-04-29T20:32:24Z"
+      },
+      "card": {
+        "description": "species of fungus",
+        "wikidata_id": "Q5200565",
+        "length_bytes": 13339,
+        "last_touched": "2026-07-15T17:09:57Z",
+        "is_disambiguation": false
+      },
+      "content": {
+        "full_plain_text": "Cyptotrama asprata (alternatively spelled aspratum), commonly known as the golden-scruffy collybia or spiny woodknight  is a saprobic species of mushroom in the family Physalacriaceae. This fungus has had a varied taxonomical history, having been placed in fourteen genera before finally settling in Cyptotrama.\nIt is characterized by the bright orange to yellow cap that in young specimens is covered with tufts of fibrils resembling small spikes. This species is differentiated from several other similar members of genus by variations in cap color, and spore size and shape. It is widely distributed in tropical regions of the world.\n\n\nHistory\nThis species was first described from Ceylon by English naturalist Miles Joseph Berkeley in 1847; soon after (1852), specimens were collected from South Carolina USA. Later, the fungus was described under a variety of names: Lentinus chrysopeplus from Cuba; Agaricus sabriusculus and Agaricus lacunosa from New York; Collybia lacunosa from Michigan; and Omphalia scabriuscula in Connecticut. As Canadian mycologists Redhead and Ginns explain in a 1980 article on the species, since its original 1847 description, C. asprata has been given 28 names, and placed in 14 different genera.\n\n\nDescription\nThe cap is 0.6 to 2.7 centimetres (0.2 to 1.1 in) in diameter, convex to cushion-shaped. The cap surface is dry, and younger specimens are covered with characteristic spikes; as the spikes break up with age, they tend to look more hairy or woolly. Older specimens typically have the surface features worn off. The cap margin tends to be rolled inwards when young, gradually becoming straight with maturity. The color of the cap is bright or pale yellow, increasing in intensity towards the center of the cap. C. asprata has a web-like ring that soon disappears.\n\nThe gills, pale yellow to white in color, are distantly spaced and have an adnate (squarely attached) or short decurrent (running down the length) attachment to the stem; they feel greasy when dried and crushed. The stem is 1 to 6.7 cm (0.4 to 2.6 in) long by 0.2 to 0.4 cm (0.1 to 0.2 in) thick at the stem apex; the stem is slightly thicker towards the base, and may be covered with hyphae that appear woolly (flocculose) or hairy (fibrillose). The surface of the stem may also be scaly – especially towards the base – or it may be covered with very small particles (granular). The flesh of this mushroom is white or pale yellow, with no distinctive taste or odor. The spore print is white. It is considered inedible.\n\n\nSimilar species\nMany other members of genus Cyptotrama are similar in appearance and differ from C. asprata by only one or two readily observable features. For example, C. granulosa is bright yellowish-brown (rather than bright or pale yellow in C. asprata); C. lachnocephala is ochre-colored; C. deseynesiana is cream-colored with brown scales; C. verruculosa has a \"copper-rust-brown\" cap; C. costesii has olive-colored pigments. Species may also be distinguished by differences in spore size and shape, although a considerable size range has been noted for C. asprata spores. C. chrysopepla and Heliocybe sulcata are also similar.\n\n\nMicroscopic features\nSpores are thin-walled, smooth, and ellipsoidal or oval in shape. Viewed with a microscope, they appear translucent (hyaline), and stain red or blue with Melzer's reagent (inamyloid). Their dimensions are typically 7–10 by 5–7 μm; the spores contain a single large oil droplet. The spore-bearing cells, the basidia, are club-shaped, two- to four-spored, and 25–30 by 5–7 μm. The presence of sterile cells called pleurocystidia (large cells found on the gill face in some mushrooms) is uncommon; specimens may contain few or abundant cheilocystidia (large sterile cells found on the gill edge) that are club-shaped, thin-walled and 39–87.5 by 8.5–16 μm in size.\n\n\nHabitat and distribution\nCyptotrama asprata is a saprobic fungus, and grows on the decaying wood of deciduous and coniferous trees. Host species include white fir (Abies concolor), sugar maple (Acer saccharum) and other maple (Acer) species, grey alder (Alnus oblongifolia), beech (Fagus) species, spruce (Picea) species, ponderosa pine (Pinus ponderosa) and other pine (Pinus) species, poplar (Populus) and oak (Quercus) species. In temperate North America, specimens are typically collected between July through September.\nThe species has a pantropical distribution, and is widely distributed in tropical regions of the world. It has been collected from Australia, southeastern Canada, China, Costa Rica, India, Hawaii, New Zealand, Japan, and the Russian Far East. It is absent from Europe and northwestern North America.\n\n\nReferences\n\n\nExternal links"
+      }
+    },
+    {
+      "rank": 6,
+      "discovery": {
+        "source": "categorymembers",
+        "category": "Category:Physalacriaceae"
+      },
+      "identity": {
+        "wiki": "en.wikipedia.org",
+        "page_id": 22360854,
+        "title": "Cyptotrama",
+        "canonical_url": "https://en.wikipedia.org/wiki/Cyptotrama",
+        "revision_id": 1329535769,
+        "revision_timestamp": "2025-12-26T16:59:25Z"
+      },
+      "card": {
+        "description": "genus of fungi",
+        "wikidata_id": "Q1610308",
+        "length_bytes": 2047,
+        "last_touched": "2026-07-15T17:09:57Z",
+        "is_disambiguation": false
+      },
+      "content": {
+        "full_plain_text": "Cyptotrama is a genus of mushrooms in the family Physalacriaceae.\n\n\nSpecies\nCyptotrama asprata (Berk.) Redhead & Ginns (1980)\nCyptotrama chrysopepla (Berk. & M.A. Curtis) Singer (1973)\nCyptotrama costesii (Speg.) Singer (1973)\nCyptotrama dennisii Singer (1973)\nCyptotrama depauperata Singer (1977)\nCyptotrama deseynesiana (Pegler) Redhead & Ginns (1980)\nCyptotrama fagiphila Vila, Pérez-Butrόn and P.-A. Moreau (2015)\nCyptotrama granulosa (Romell) Redhead & Ginns (1980)\nCyptotrama hygrocyboides Singer (1969)\nCyptotrama lachnocephala (Pat.) Singer (1973)\nCyptotrama macrobasidia Singer (1960)\nCyptotrama nivea Singer (1989)\nCyptotrama pauper Singer (1989)\nCyptotrama platense Singer (1969)\nCyptotrama songolara Courtec. (1995)\nCyptotrama verruculosa (Singer) Singer (1973)\n\n\nReferences"
+      }
+    },
+    {
+      "rank": 7,
+      "discovery": {
+        "source": "categorymembers",
+        "category": "Category:Physalacriaceae"
+      },
+      "identity": {
+        "wiki": "en.wikipedia.org",
+        "page_id": 22488961,
+        "title": "Cylindrobasidium",
+        "canonical_url": "https://en.wikipedia.org/wiki/Cylindrobasidium",
+        "revision_id": 1308552074,
+        "revision_timestamp": "2025-08-30T04:00:28Z"
+      },
+      "card": {
+        "description": "genus of fungi",
+        "wikidata_id": "Q1615251",
+        "length_bytes": 2176,
+        "last_touched": "2026-07-15T17:10:02Z",
+        "is_disambiguation": false
+      },
+      "content": {
+        "full_plain_text": "Cylindrobasidium is a genus of corticioid fungi in the family Physalacriaceae. circumscribed by the Swiss mycologist Walter Jülich in 1974. As of June 2015, Index Fungorum lists eight species in the genus.\n\n\nSpecies\nCylindrobasidium albulum\nCylindrobasidium argenteum\nCylindrobasidium corrugum\nCylindrobasidium eucalypti\nCylindrobasidium evolvens\nCylindrobasidium laeve\nCylindrobasidium parasiticum\nCylindrobasidium torrendii\n\n\nReferences"
+      }
+    },
+    {
+      "rank": 8,
+      "discovery": {
+        "source": "categorymembers",
+        "category": "Category:Physalacriaceae"
+      },
+      "identity": {
+        "wiki": "en.wikipedia.org",
+        "page_id": 24488093,
+        "title": "Dactylosporina",
+        "canonical_url": "https://en.wikipedia.org/wiki/Dactylosporina",
+        "revision_id": 1312018913,
+        "revision_timestamp": "2025-09-18T05:40:46Z"
+      },
+      "card": {
+        "description": "genus of fungi",
+        "wikidata_id": "Q1614447",
+        "length_bytes": 2166,
+        "last_touched": "2026-07-15T17:11:21Z",
+        "is_disambiguation": false
+      },
+      "content": {
+        "full_plain_text": "Dactylosporina is a genus of fungi in the family Physalacriaceae. D. brunneomarginata, the first representative of the genus found in Asia, was added to Dactylosporina in 2015.\n\n\nReferences"
+      }
+    },
+    {
+      "rank": 9,
+      "discovery": {
+        "source": "categorymembers",
+        "category": "Category:Physalacriaceae"
+      },
+      "identity": {
+        "wiki": "en.wikipedia.org",
+        "page_id": 24488098,
+        "title": "Gloiocephala",
+        "canonical_url": "https://en.wikipedia.org/wiki/Gloiocephala",
+        "revision_id": 1214177348,
+        "revision_timestamp": "2024-03-17T10:53:40Z"
+      },
+      "card": {
+        "description": "genus of fungi",
+        "wikidata_id": "Q1610422",
+        "length_bytes": 3874,
+        "last_touched": "2026-07-15T17:11:21Z",
+        "is_disambiguation": false
+      },
+      "content": {
+        "full_plain_text": "Gloiocephala is a genus of fungi in the family Physalacriaceae.  The genus is widespread, though mainly known from tropical and sub-tropical areas, and contains about 30 species.\nThe mushrooms of this group are very small and grow on stems and leaves of monocotyledonous plants, such as sedges, usually in wet places.  In most species their fruiting bodies do not develop into a typical mushroom form - the  gills are often reduced to vein-like structures or completely missing, and the stipe may be asymmetrical, short or absent.\nThere are five species which grow in Europe: G. caricis, G. cerkesii, G. cornelii, G. menieri and G. pseudocaricis.\n\n\nSpecies\n\n\nReferences"
+      }
+    },
+    {
+      "rank": 10,
+      "discovery": {
+        "source": "categorymembers",
+        "category": "Category:Physalacriaceae"
+      },
+      "identity": {
+        "wiki": "en.wikipedia.org",
+        "page_id": 24956657,
+        "title": "Flammulina velutipes",
+        "canonical_url": "https://en.wikipedia.org/wiki/Flammulina_velutipes",
+        "revision_id": 1342998685,
+        "revision_timestamp": "2026-03-11T17:56:27Z"
+      },
+      "card": {
+        "description": "species of fungus",
+        "wikidata_id": "Q372893",
+        "length_bytes": 5369,
+        "last_touched": "2026-07-15T17:11:37Z",
+        "is_disambiguation": false
+      },
+      "content": {
+        "full_plain_text": "Flammulina velutipes, the velvet foot, velvet stem, velvet shank or wild enoki, is a species of gilled mushroom in the family Physalacriaceae. The species occurs in Europe and North America. \n\n\nTaxonomy\nThe species was originally described from England by botanist William Curtis in 1782 as Agaricus velutipes. It was transferred to the genus Flammulina by Rolf Singer in 1951.\nUntil recently, F. velutipes was considered to be conspecific with the Asian F. filiformis, cultivated for food as \"enokitake\" or \"golden needle mushroom\", but DNA sequencing shows that the two are distinct.\n\n\nDescription\nF. velutipes grows up to 10 centimetres (4 in) tall and wide. The cap is light orange, darker toward the center. The stem fades to a darker color near the base. The flesh of the cap is yellow, while that of the stem is brown. The odour and flavour are pleasant. The spore print is white.\n\n\nSimilar species\nIt may resemble F. populicola and F. lupinicola. Marasmiellus dichrous and Xeromphalina tenuipes are also similar.\n\n\nDistribution and habitat\nThe species occurs throughout Europe (October to February) and in North America (through May in the east).\nVelvet shank is saprotrophic especially on dead or dying elm, as well as ash, beech and oak.\n\n\nUses\nThe fleshy caps can be sliced and cooked (ideally with the skin removed), or dried and ground into seasoning.\n\n\nSee also\nCollybia\n\n\nReferences\n\n\nExternal links\n\n Media related to Flammulina velutipes at Wikimedia Commons"
+      }
+    }
+  ]
+}
