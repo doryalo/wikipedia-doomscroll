@@ -1,38 +1,72 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Heart, History, MessageCircle, Search, Send } from "lucide-react"
+import { ArrowLeft, Heart, History, MessageCircle, Search, Send } from "lucide-react"
 import { Badge, type BadgeProps } from "./components/ui/badge"
 import { YearRangeFilter } from "./components/YearRangeFilter"
 
 type Topic = { name: string; variant: NonNullable<BadgeProps["variant"]> }
 type Post = { id: string; year: number; date: string; headline: string; content: string; likes: number; comments: number; shares?: number; source: string; sourceUrl?: string; topics: Topic[] }
-type Fact = Omit<Post, "id" | "date" | "likes" | "comments">
 
-const ALL_FACTS: Fact[] = [
-  { year: 1969, headline: "650 Million People Stopped Everything To Watch This Moment", content: "At 10:56 p.m. EDT, Neil Armstrong became the first person to ever walk on the Moon — and almost the entire connected world tuned in to watch. It remains one of the largest live television audiences in history, decades before anyone had a phone in their pocket.", source: "Apollo 11 mission archive", sourceUrl: "https://www.nasa.gov/mission/apollo-11/", topics: [{ name: "Science", variant: "science" }, { name: "USA", variant: "usa" }] },
-  { year: 1791, headline: "The 45 Words That Changed What You're Allowed To Say", content: "The First Amendment entered the U.S. Constitution, guaranteeing freedom of religion, speech, press, assembly, and petition — in just 45 words. More than two centuries later, those same words are still being fought over in courtrooms today.", source: "U.S. National Archives", sourceUrl: "https://www.archives.gov/founding-docs/bill-of-rights", topics: [{ name: "USA", variant: "usa" }] },
-  { year: 1989, headline: "One Reporter's Mistake Brought Down The Berlin Wall", content: "A mixed-up announcement at an evening press conference sent East Germans rushing to the border crossings. Guards, with no real orders, let them through. Within hours a wall that had divided a city for 28 years was powerless to stop the crowds.", source: "German Historical Museum", sourceUrl: "https://www.dhm.de/en/", topics: [{ name: "WW2", variant: "ww2" }] },
-  { year: 1903, headline: "12 Seconds That Changed How Humans Move Forever", content: "Near Kitty Hawk, North Carolina, Orville Wright flew just 120 feet in the Wright Flyer — shorter than the wingspan of a modern jumbo jet. The brothers flew four times that day; their longest flight barely broke a minute. It was enough to invent the future.", source: "Smithsonian National Air and Space Museum", sourceUrl: "https://airandspace.si.edu/", topics: [{ name: "Science", variant: "science" }, { name: "USA", variant: "usa" }] },
-  { year: 1945, headline: "51 Countries Made A Promise After The World's Deadliest War — Did They Keep It?", content: "Fifty-one countries brought the United Nations Charter into force, creating an organization built to maintain peace and stop history from repeating itself. Nearly 80 years and dozens of conflicts later, the debate over whether it succeeded is still raging.", source: "United Nations archives", sourceUrl: "https://www.un.org/en/about-us/history-of-the-un", topics: [{ name: "WW2", variant: "ww2" }] },
-  { year: 1961, headline: "This Man Orbited The Entire Planet Before Most Of The World Knew His Name", content: "Vostok 1 completed a single orbit of Earth in 108 minutes, making Yuri Gagarin the first human in space. His call sign, Kedr — Russian for cedar — was broadcast to mission control before almost anyone outside the USSR had even heard of him.", source: "Roscosmos historical collection", sourceUrl: "https://www.roscosmos.ru/en/", topics: [{ name: "Science", variant: "science" }] },
-  { year: 1981, headline: "The Channel That Promised To Kill The Radio Star — And Almost Did", content: "MTV launched in the United States with the words, 'Ladies and gentlemen, rock and roll.' Within a decade it had reshaped how an entire generation discovered music, turning three-minute videos into the most powerful marketing tool the industry had ever seen.", source: "Museum of Pop Culture", sourceUrl: "https://www.mopop.org/", topics: [{ name: "2000s Pop Culture", variant: "popCulture" }] },
-  { year: 1911, headline: "She Vanished From The Louvre For Two Years — And Nobody Even Noticed At First", content: "The Mona Lisa was stolen by a former museum employee and stayed missing for more than two years. Ironically, the empty wall drew more visitors than the painting ever had — and by the time it resurfaced, Leonardo da Vinci's portrait had become the most famous painting on Earth.", source: "Louvre Museum archives", sourceUrl: "https://www.louvre.fr/en/", topics: [{ name: "Art", variant: "art" }] },
-]
-
-function matchesQuery(fact: Fact, q: string): boolean {
-  const lq = q.toLowerCase()
-  return fact.headline.toLowerCase().includes(lq)
-    || fact.content.toLowerCase().includes(lq)
-    || fact.topics.some(t => t.name.toLowerCase().includes(lq))
+// ── API types ──────────────────────────────────────────────────────────────
+type ApiItem = {
+  id: string
+  profileName: string
+  profilePhotoUrl: string
+  contentType: string
+  contentText: string
+  historicalDate: { startYear: number; precision: string; label: string; endYear?: number }
+  tags: string[]
+  likesCount: number
+  commentsCount: number
+  sharesCount: number
+  sourceUrl?: string
+  sourceTitle?: string
 }
 
-function yearBoundsOf(facts: Fact[]): [number, number] {
-  if (!facts.length) return [1780, 2026]
-  const years = facts.map(f => f.year)
+const VARIANT_MAP: Record<string, NonNullable<BadgeProps["variant"]>> = {
+  physics: "science", chemistry: "science", research: "science", elements: "science",
+  science: "science", invention: "science", nobel: "science",
+  usa: "usa", "civil-war": "usa", abolition: "usa", law: "usa",
+  art: "art", painting: "art", milan: "art", florence: "art",
+  ancient: "ww2", egypt: "ww2", rome: "ww2", naval: "ww2",
+}
+
+function tagToTopic(tag: string): Topic {
+  return {
+    name: tag.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+    variant: VARIANT_MAP[tag] ?? "science",
+  }
+}
+
+async function fetchAllPosts(): Promise<ApiItem[]> {
+  const items: ApiItem[] = []
+  let cursor: string | null = null
+  do {
+    const url = cursor
+      ? `/api/feed?cursor=${encodeURIComponent(cursor)}&limit=50`
+      : "/api/feed?limit=50"
+    const res = await fetch(url)
+    if (!res.ok) break
+    const data: { items: ApiItem[]; nextCursor: string | null } = await res.json()
+    items.push(...data.items)
+    cursor = data.nextCursor
+  } while (cursor)
+  return items
+}
+
+function matchesQuery(item: ApiItem, q: string): boolean {
+  const lq = q.toLowerCase()
+  return (item.sourceTitle ?? "").toLowerCase().includes(lq)
+    || item.contentText.toLowerCase().includes(lq)
+    || item.tags.some(t => t.toLowerCase().includes(lq))
+    || item.profileName.toLowerCase().includes(lq)
+}
+
+function yearBoundsOf(items: ApiItem[]): [number, number] {
+  if (!items.length) return [1780, 2026]
+  const years = items.map(i => i.historicalDate.startYear)
   const lo = Math.min(...years), hi = Math.max(...years)
   return [lo, lo === hi ? lo + 1 : hi]
 }
-
-const TOPICS: Topic[] = Array.from(new Map(ALL_FACTS.flatMap(f => f.topics).map(t => [t.name, t])).values())
 
 const format = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K` : String(n)
 function AdminMark() { return <div aria-hidden="true" className="admin-mark"><History className="size-5" /></div> }
@@ -92,11 +126,28 @@ export default function App() {
   const [moreLoading, setMoreLoading] = useState(false)
   const [yearBounds, setYearBounds] = useState<[number, number]>([1780, 2026])
   const [yearRange, setYearRange] = useState<[number, number]>([1780, 2026])
+  const [topics, setTopics] = useState<Topic[]>([])
 
   const sentinel = useRef<HTMLDivElement>(null)
   const page = useRef(0)
   const locked = useRef(false)
-  const matchesRef = useRef<Fact[]>([])
+  const matchesRef = useRef<ApiItem[]>([])
+  const allApiItems = useRef<ApiItem[]>([])
+
+  // Fetch all posts from backend on mount
+  useEffect(() => {
+    fetchAllPosts().then(items => {
+      allApiItems.current = items
+      const seen = new Set<string>()
+      const unique: Topic[] = []
+      for (const item of items) {
+        for (const tag of item.tags) {
+          if (!seen.has(tag)) { seen.add(tag); unique.push(tagToTopic(tag)) }
+        }
+      }
+      setTopics(unique)
+    })
+  }, [])
 
   const load = useCallback((first = false) => {
     if (locked.current) return
@@ -105,10 +156,22 @@ export default function App() {
     window.setTimeout(() => {
       const pool = matchesRef.current
       if (!pool.length) { setLoading(false); setMoreLoading(false); locked.current = false; return }
-      const batch = Array.from({ length: first ? 3 : 3 }, (_, i) => {
+      const batch = Array.from({ length: 3 }, (_, i) => {
         const index = page.current * 3 + i
-        const fact = pool[index % pool.length]
-        return { ...fact, id: `post-${index}`, date: `${Math.floor(index / 2) + 1} days ago`, likes: 540 + index * 291, comments: 23 + index * 17 }
+        const item = pool[index % pool.length]
+        return {
+          id: `${item.id}-${index}`,
+          year: item.historicalDate.startYear,
+          date: item.historicalDate.label,
+          headline: item.sourceTitle ?? item.profileName,
+          content: item.contentText,
+          likes: item.likesCount,
+          comments: item.commentsCount,
+          shares: item.sharesCount || undefined,
+          source: item.sourceTitle ?? item.profileName,
+          sourceUrl: item.sourceUrl,
+          topics: item.tags.map(tagToTopic),
+        } satisfies Post
       })
       page.current += 1
       setPosts(first ? batch : old => [...old, ...batch])
@@ -116,7 +179,7 @@ export default function App() {
     }, first ? 600 : 800)
   }, [])
 
-  function commitResults(matches: Fact[], label: string) {
+  function commitResults(matches: ApiItem[], label: string) {
     matchesRef.current = matches
     const bounds = yearBoundsOf(matches)
     page.current = 0
@@ -132,15 +195,27 @@ export default function App() {
   function handleSubmit() {
     const q = query.trim()
     if (!q) return
-    commitResults(ALL_FACTS.filter(f => matchesQuery(f, q)), q)
+    commitResults(allApiItems.current.filter(item => matchesQuery(item, q)), q)
   }
 
-  function exploreTopic(topicName: string) {
-    commitResults(ALL_FACTS.filter(f => f.topics.some(t => t.name === topicName)), topicName)
+  function exploreTopic(tagName: string) {
+    const normalized = tagName.toLowerCase().replace(/\s+/g, "-")
+    commitResults(
+      allApiItems.current.filter(item => item.tags.some(t => t.toLowerCase() === normalized)),
+      tagName,
+    )
   }
 
   function exploreAll() {
-    commitResults(ALL_FACTS, "")
+    commitResults(allApiItems.current, "")
+  }
+
+  function handleBack() {
+    setSubmitted(false)
+    setPosts([])
+    setQuery("")
+    page.current = 0
+    locked.current = false
   }
 
   // Infinite scroll
@@ -188,6 +263,21 @@ export default function App() {
               />
             </label>
           </form>
+
+          {/* Back button — appears on submit */}
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-muted transition-all hover:bg-page hover:text-ink"
+            style={{
+              opacity: submitted ? 1 : 0,
+              pointerEvents: submitted ? "auto" : "none",
+              transitionDuration: "300ms",
+            }}
+            title="Back to home"
+          >
+            <ArrowLeft className="size-3.5" />
+            Go
+          </button>
         </div>
       </header>
 
@@ -233,33 +323,35 @@ export default function App() {
             </form>
 
             {/* Explore chips */}
-            <div className="flex flex-col items-center gap-3 pt-1">
-              <p className="text-sm font-medium text-muted">Or explore a topic</p>
-              <div className="flex flex-wrap justify-center gap-2">
-                <Badge
-                  role="button"
-                  tabIndex={0}
-                  onClick={exploreAll}
-                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); exploreAll() } }}
-                  className="cursor-pointer border-line bg-white text-ink transition-transform hover:scale-105 hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1"
-                >
-                  All
-                </Badge>
-                {TOPICS.map(t => (
+            {topics.length > 0 && (
+              <div className="flex flex-col items-center gap-3 pt-1">
+                <p className="text-sm font-medium text-muted">Or explore a topic</p>
+                <div className="flex flex-wrap justify-center gap-2">
                   <Badge
-                    key={t.name}
-                    variant={t.variant}
                     role="button"
                     tabIndex={0}
-                    onClick={() => exploreTopic(t.name)}
-                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); exploreTopic(t.name) } }}
-                    className="cursor-pointer transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1"
+                    onClick={exploreAll}
+                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); exploreAll() } }}
+                    className="cursor-pointer border-line bg-white text-ink transition-transform hover:scale-105 hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1"
                   >
-                    {t.name}
+                    All
                   </Badge>
-                ))}
+                  {topics.map(t => (
+                    <Badge
+                      key={t.name}
+                      variant={t.variant}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => exploreTopic(t.name)}
+                      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); exploreTopic(t.name) } }}
+                      className="cursor-pointer transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1"
+                    >
+                      {t.name}
+                    </Badge>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </section>
 
