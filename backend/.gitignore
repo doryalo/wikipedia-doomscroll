@@ -1,4 +1,6 @@
 __pycache__/
 .venv/
 .env
-data/
+.DS_Store
+data/*.db-shm
+data/*.db-wal
