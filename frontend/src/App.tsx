@@ -5,7 +5,7 @@ import { YearRangeFilter } from "./components/YearRangeFilter"
 import { AuthModal, type CurrentUser } from "./components/AuthModal"
 
 type Topic = { name: string; variant: NonNullable<BadgeProps["variant"]> }
-type Post = { id: string; apiId: string; year: number; date: string; headline: string; content: string; likes: number; comments: number; shares?: number; source: string; sourceUrl?: string; topics: Topic[] }
+type Post = { id: string; apiId: string; profileName: string; year: number; date: string; headline: string; content: string; likes: number; comments: number; shares?: number; source: string; sourceUrl?: string; topics: Topic[] }
 
 // ── API types ──────────────────────────────────────────────────────────────
 type ApiItem = {
@@ -160,7 +160,7 @@ function PostCard({ post, currentUser, onAuthRequired }: { post: Post; currentUs
         <header className="mb-4 flex items-start justify-between">
           <div className="flex min-w-0 items-center gap-3">
             <AdminMark />
-            <div><h2 className="font-brand text-sm font-bold text-ink">Anon Admin</h2><p className="text-xs text-muted">{post.date}</p></div>
+            <div><h2 className="font-brand text-sm font-bold text-ink">{post.profileName}</h2><p className="text-xs text-muted">{post.date}</p></div>
           </div>
         </header>
         <div className="mb-3 flex flex-wrap gap-2">{post.topics.map(t => <Badge key={t.name} variant={t.variant}>{t.name}</Badge>)}</div>
@@ -253,29 +253,27 @@ export default function App() {
 
   const load = useCallback((first = false) => {
     if (locked.current) return
+    const pool = matchesRef.current
+    const start = page.current * 3
+    if (start >= pool.length) return
     locked.current = true
     first ? setLoading(true) : setMoreLoading(true)
     window.setTimeout(() => {
-      const pool = matchesRef.current
-      if (!pool.length) { setLoading(false); setMoreLoading(false); locked.current = false; return }
-      const batch = Array.from({ length: 3 }, (_, i) => {
-        const index = page.current * 3 + i
-        const item = pool[index % pool.length]
-        return {
-          id: `${item.id}-${index}`,
-          apiId: item.id,
-          year: item.historicalDate.startYear,
-          date: item.historicalDate.label,
-          headline: item.sourceTitle ?? item.profileName,
-          content: item.contentText,
-          likes: item.likesCount,
-          comments: item.commentsCount,
-          shares: item.sharesCount || undefined,
-          source: item.sourceTitle ?? item.profileName,
-          sourceUrl: item.sourceUrl,
-          topics: item.tags.map(tagToTopic),
-        } satisfies Post
-      })
+      const batch = pool.slice(start, start + 3).map(item => ({
+        id: item.id,
+        apiId: item.id,
+        profileName: item.profileName,
+        year: item.historicalDate.startYear,
+        date: item.historicalDate.label,
+        headline: item.sourceTitle ?? item.profileName,
+        content: item.contentText,
+        likes: item.likesCount,
+        comments: item.commentsCount,
+        shares: item.sharesCount || undefined,
+        source: item.sourceTitle ?? item.profileName,
+        sourceUrl: item.sourceUrl,
+        topics: item.tags.map(tagToTopic),
+      } satisfies Post))
       page.current += 1
       setPosts(first ? batch : old => [...old, ...batch])
       setLoading(false); setMoreLoading(false); locked.current = false
