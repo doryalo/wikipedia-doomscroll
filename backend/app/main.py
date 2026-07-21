@@ -12,7 +12,6 @@ from .enrichment_watcher import configured_input_dir, watch_enrichment_directory
 from .logger import configure_logging
 from .post_generation import watch_enrichments_for_posts
 from .router import router
-from .seed import seed_demo_data
 
 load_dotenv()
 configure_logging()
