@@ -1,4 +1,5 @@
 import sqlite3
+import uuid
 from contextlib import closing
 from pathlib import Path
 
@@ -15,6 +16,10 @@ def connect(path: str | Path = DATABASE_PATH) -> sqlite3.Connection:
     connection.execute("PRAGMA journal_mode = WAL")
     connection.execute("PRAGMA busy_timeout = 5000")
     return connection
+
+
+def new_id() -> str:
+    return str(uuid.uuid4())
 
 
 def migrate(connection: sqlite3.Connection) -> None:

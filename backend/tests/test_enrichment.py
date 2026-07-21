@@ -181,7 +181,22 @@ class EnrichmentTests(unittest.TestCase):
             )
         }
         self.assertTrue(
-            {"articles", "enrichment_runs", "article_analyses", "tags", "article_tags", "llm_calls"}
+            {
+                "articles",
+                "enrichment_runs",
+                "article_analyses",
+                "tags",
+                "article_tags",
+                "llm_calls",
+                "profiles",
+                "fictional_characters",
+                "groups",
+                "posts",
+                "post_groups",
+                "likes",
+                "comments",
+                "profile_group_follows",
+            }
             <= tables
         )
         self.assertEqual(
