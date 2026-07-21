@@ -6,7 +6,7 @@ from contextlib import closing
 
 from .db import connect
 
-DEMO_PASSWORD = "learnscroll"
+DEMO_PASSWORD = "123"
 
 
 def _hash_pw(password: str, salt: str) -> str:
