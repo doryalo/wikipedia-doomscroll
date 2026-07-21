@@ -407,7 +407,7 @@ export default function App() {
 
           {/* Auth / user controls */}
           <div className="flex flex-shrink-0 items-center gap-2">
-            {streak > 0 && (
+            {currentUser && streak > 0 && (
               <span className="flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-500">
                 🔥 {streak}
               </span>
